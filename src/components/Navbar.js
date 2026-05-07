@@ -28,27 +28,29 @@ import {
 const APP_BAR_FONT =
   'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif';
 
-const Navbar = ({title, main}) => {
+const Navbar = ({title, main }) => {
   const router = useRouter();
-  const { inventoryUpdated } = useProduce();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { inventoryUpdated, isLoggedIn, isAdmin } = useProduce();
+  // const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
 
-  useEffect(() => {
-    checkAuthStatus();
-  }, []);
+  // useEffect(() => {
+  //   checkAuthStatus();
+  // }, []);
 
-  const checkAuthStatus = async () => {
-    try {
-      const result = await authService.checkAuth();
-      console.log('Authentication check result:', result);
-      setIsLoggedIn(!!result);
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      setIsLoggedIn(false);
-    }
-  };
+  // const checkAuthStatus = async () => {
+  //   try {
+  //     const result = await authService.checkAuth();
+  //     console.log('Authentication check result:', result);
+  //     setIsLoggedIn(!!result);
+  //   } catch (error) {
+  //     console.error('Auth check failed:', error);
+  //     setIsLoggedIn(false);
+  //   }
+  // };
+  
+  console.log("isAdmin is ", isAdmin)
 
   const handleLogout = async () => {
     try {
@@ -167,6 +169,7 @@ const Navbar = ({title, main}) => {
                 <LogoutIcon sx={{ mr: 2, fontSize: 20 }} />
                 Logout
               </MenuItem>
+              {isAdmin && (
               <MenuItem
                 onClick={handleInventoryList}
                 title={
@@ -179,14 +182,19 @@ const Navbar = ({title, main}) => {
                 Inventory List
                 {inventoryUpdated ? ' •' : ''}
               </MenuItem>
+              )}
+              {isAdmin && (
               <MenuItem onClick={handleHistoryOrder}>
                 <HistoryIcon sx={{ mr: 2, fontSize: 20 }} />
                 Order History
               </MenuItem>
+              )}
+              {isLoggedIn && (
               <MenuItem onClick={handleOrder}>
                 <ShoppingCartIcon sx={{ mr: 2, fontSize: 20 }} />
                 Current Order
               </MenuItem>
+              )}
             </>
           ) : (
             <MenuItem 

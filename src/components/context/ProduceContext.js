@@ -1,6 +1,7 @@
 // context/ProduceContext.js
 import React, { useState, createContext, useContext, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import {authService} from '../auth';
 import gala_apple from "../images/gala_apple.png"
 import fuji_apple from "../images/FUJIAPPLE.png"
 import honey_crisp from "../images/honeycrisp.png"
@@ -65,8 +66,26 @@ export const ProduceProvider = ({ children }) => {
   const [currentBalance, setCurrentBalance] = useState([])
   const [submitButtonClicked, setSubmitClicked] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   /** Shared across Navbar + inventory page; URL cannot pass setters. */
   const [inventoryUpdated, setInventoryUpdated] = useState(false)
+
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
+
+  const checkAuthStatus = async () => {
+    try {
+      const result = await authService.checkAuth();
+      console.log('Authentication check result:', result);
+      setIsAdmin(result.is_admin);
+      setIsLoggedIn(!!result);
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      setIsLoggedIn(false);
+    }
+  };
 
   const fetchProduceItems = useCallback(async () => {
     try {
@@ -165,6 +184,8 @@ export const ProduceProvider = ({ children }) => {
       loading,
       inventoryUpdated,
       setInventoryUpdated,
+      isLoggedIn,
+      isAdmin,
     }}>
       {children}
     </ProduceContext.Provider>

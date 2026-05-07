@@ -84,6 +84,7 @@ export default function produceorder() {
       toggleSubmitButtonClicked, 
       submitButtonClicked,
       inventoryUpdated,
+      isAdmin,
     } = useProduce();
     const router = useRouter();
     const [loggedIn, setLoggedIn] = useState(false);
@@ -114,6 +115,38 @@ export default function produceorder() {
   
       checkAuthStatus();
     }, [router.pathname]); // Add router.pathname as dependency
+
+    const getAuthStatus = async () => {
+      let result;
+      try {
+        result = await authService.checkAuth();
+        console.log('Authentication check result:', result);
+        setLoggedIn(!!result);
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        setLoggedIn(false);
+      }
+      return result;
+    };
+
+    useEffect(() => {
+      getAuthStatus();
+    }, []);
+
+    // useEffect(() => {
+    //   checkAuthStatus();
+    // }, []);
+  
+    // const checkAuthStatus = async () => {
+    //   try {
+    //     const result = await authService.checkAuth();
+    //     console.log('Authentication check result:', result);
+    //     setIsLoggedIn(!!result);
+    //   } catch (error) {
+    //     console.error('Auth check failed:', error);
+    //     setIsLoggedIn(false);
+    //   }
+    // };
   
     const [getUpdatedProduceList, setGetUpdatedProduceList]=useState(false)
     const [value, setValue]=useState(null);
@@ -652,9 +685,10 @@ export default function produceorder() {
   }, [uniqueProduceItems]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-50">
+    <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-50 w-full">
             {loggedIn ? console.log("User is logged in:", loggedIn) : console.log("User is not logged in:", loggedIn)}
-
+            {console.log("getAuthStatus is ", getAuthStatus())}
+            {console.log("isAdmin is ", isAdmin)}
       <header className="w-full bg-white shadow-sm">
         <Navbar title="PRODUCE ORDER" main="Main" />
       </header>
@@ -662,8 +696,8 @@ export default function produceorder() {
       <main className="container mx-auto pt-16">
         {console.log("inventoryUpdated is ", inventoryUpdated)}
         {/* Search Section */}
-        <div className="max-w-3xl mx-auto px-4 py-3">
-          <div className="flex gap-2 bg-white p-4 rounded-lg shadow-sm">
+        <div className="max-w-3xl mx-auto px-4 py-3 w-full">
+          <div className="flex gap-2 bg-white p-4 rounded-lg shadow-sm w-full">
             <Autocomplete 
               size="small"
               fullWidth
@@ -695,7 +729,7 @@ export default function produceorder() {
                     </div>
                   </div>
                   {!option.stock && (
-                    <div className="ml-2 text-xs text-red-600 font-medium">Out of Stock</div>
+                    <div className="text-xs text-red-600 font-medium px-4"><span>Out of Stock</span></div>
                   )}
                 </li>
               )}
@@ -729,21 +763,21 @@ export default function produceorder() {
 
         {/* Order List */}
         <div className="max-w-3xl mx-auto px-4">
-          <div className="bg-white rounded-lg shadow-sm divide-y divide-gray-200 border border-gray-200">
+          <div className="flex flex-col justify-center items-center bg-white rounded-lg shadow-sm divide-y divide-gray-200 border border-gray-200">
             {userCurrentOrder.map((item, index) => (
               <div 
                 key={item.id} 
-                className={`p-4 hover:bg-gray-50 transition-colors border-b border-gray-200 last:border-b-0 ${
+                className={`w-full p-4 hover:bg-gray-50 transition-colors border-b border-gray-200 last:border-b-0 ${
                   !item.stock ? 'opacity-75 bg-gray-50' : ''
                 }`}
               >
-                <div className="flex items-center">
-                  <div className="w-16 h-16 relative flex-shrink-0 overflow-hidden">
+                <div className="flex justify-center items-center flex-col sm:flex-col md:flex-col lg:flex-row xl:flex-row">
+                  <div className="w-22 h-22 relative flex-shrink-0 overflow-hidden">
                     <Image
                       src={item.produce_Image}
                       alt={item.name}
-                      width={64}
-                      height={64}
+                      width={68}
+                      height={68}
                       style={{ 
                         objectFit: 'contain',
                         maxWidth: '100%',
@@ -752,66 +786,113 @@ export default function produceorder() {
                     />
                   </div>
                   
-                  <div className="flex-1 min-w-0 ml-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-sm font-medium capitalize">{item.name}</h3>
-                        {!item.stock && (
-                          <span className="text-xs text-red-600 font-medium">
-                            Out of Stock
-                          </span>
+                  <div className="w-11/12 py-4">
+                    <div className="w-full flex items-center justify-between flex-col sm:flex-col md:flex-col lg:flex-row xl:flex-row">
+                      <div className="w-full py-3 flex flex-col sm:flex-col md:flex-col lg:flex-row xl:flex-row">
+                        <div className="w-full py-4 flex flex-row">
+                          <div className="px-4">
+                            <label className="text-xs font-semibold uppercase tracking-wide text-gray-600">Item:</label>
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-medium capitalize text-gray-900">{item.name}</h3>
+                          </div>
+                        </div>
+                        <div className="flex justify-start items-center">
+                          {!item.stock && (
+                            <span className="text-xs text-red-600 font-semibold px-4">
+                              Out of Stock
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="w-full text-sm mt-0.5">
+                        <div>
+                          <div className="py-2 px-4">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-gray-600">Case Cost:</span>
+                            <span className="text-sm font-medium text-gray-900"> ${item.case_cost}</span>
+                          </div>
+                          <div className="px-4 py-2">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-gray-600">Case Size:</span>
+                            <span className="text-sm font-medium text-gray-900"> {item.case_size}</span>
+                          </div>
+                        </div>
+
+                        {item.promo_price > 0 && (
+                          <div className="py-4 px-4">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-green-600">
+                              Promo:
+                            </span>
+                            <span className="text-sm font-medium text-green-700"> ${item.promo_price}</span>
+                          </div>
                         )}
                       </div>
-                      <div className="flex items-center space-x-1">
-                        <Button
-                          onClick={(e) => decreaseProduceItem(e, item.id, item.case_cost, item.promo_price, item.stock, index)}
-                          className="min-w-0 p-1"
-                          disabled={!item.stock}
-                          aria-label="Decrease quantity"
-                        >
-                          <RemoveIcon className="w-4 h-4 text-blue-500" />
-                        </Button>
-                        <TextField
-                          size="small"
-                          value={item.Qty}
-                          className="w-16"
-                          disabled={!item.stock}
-                          inputProps={{ 'aria-label': 'Quantity' }}
-                          InputProps={{
-                            readOnly: !item.stock
-                          }}
-                        />
-                        <Button
-                          onClick={(e) => increaseProduceItem(e, item.Qty, item.id, item.case_cost, item.promo_price, item.stock, index)}
-                          className="min-w-0 p-1"
-                          disabled={!item.stock}
-                          aria-label="Increase quantity"
-                        >
-                          <AddIcon className="w-4 h-4 text-blue-500" />
-                        </Button>
-                        <Button
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="w-7/12 flex justify-start items-center">
+                        <div className="w-6/12 flex justify-start items-center px-4 py-4">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-gray-600">Quantity:</p>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center rounded-full w-[86px] border-2 border-black h-7 px-1">
+                          <Button
+                            onClick={(e) => decreaseProduceItem(e, item.id, item.case_cost, item.promo_price, item.stock, index)}
+                            className="min-w-0"
+                            disabled={!item.stock}
+                            aria-label="Decrease quantity"
+                            sx={{ minWidth: 22, width: 22, height: 24, p: 0 }}
+                          >
+                            <RemoveIcon className="text-black" sx={{ fontSize: 16 }}/>
+                          </Button>
+                          <TextField
+                            size="small"
+                            value={item.Qty}
+                            className="flex items-center text-center"
+                            disabled={!item.stock}
+                            inputProps={{ 'aria-label': 'Quantity' }}
+                            InputProps={{
+                              readOnly: !item.stock
+                            }}
+                            sx={{
+                              width: 30,
+                              '& .MuiInputBase-root': {
+                                height: 20,
+                                fontSize: 12,
+                                borderRadius: '9999px',
+                                backgroundColor: 'white'
+                              },
+                              '& .MuiInputBase-input': {
+                                p: '2px 0',
+                                textAlign: 'center',
+                                color: 'text.primary'
+                              },
+                              '& .MuiOutlinedInput-notchedOutline': {
+                                border: 'none'
+                              }
+                            }}
+                          />
+                          <Button
+                            onClick={(e) => increaseProduceItem(e, item.Qty, item.id, item.case_cost, item.promo_price, item.stock, index)}
+                            className="min-w-0 bg-black"
+                            disabled={!item.stock}
+                            aria-label="Increase quantity"
+                            sx={{ minWidth: 22, width: 22, height: 24, p: 0 }}
+                          >
+                            <AddIcon className="text-black" sx={{ fontSize: 16 }} />
+                          </Button>
+                        </div>
+
+                        {/* <Button
                           onClick={(e) => removeProduceItem(e, item.id)}
                           className="min-w-0 p-1"
                           disabled={!item.stock}
                           aria-label="Remove item from cart"
                         >
                           <DeleteIcon className="w-4 h-4 text-red-500" />
-                        </Button>
+                        </Button> */}
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
-                      <span>${item.case_cost}</span>
-                      <span>•</span>
-                      <span>{item.case_size}</span>
-                      {item.promo_price > 0 && (
-                        <>
-                          <span>•</span>
-                          <span className="text-green-600">
-                            Promo: ${item.promo_price}
-                          </span>
-                        </>
-                      )}
-                    </div>
                   </div>
                 </div>
               </div>
