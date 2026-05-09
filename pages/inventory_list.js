@@ -16,6 +16,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
 import SaveIcon from '@mui/icons-material/Save';
+import InventoryCard from './inventory_card';
 
 
 /**
@@ -142,6 +143,7 @@ const inventory_list = (props) => {
   return (
     
     <div>
+      <div className="hidden md:block">
         {/* TODO: DISPLAYING THE NAVBAR*/}
         <div className="mb-10">
           <Navbar title="Inventory List" />
@@ -319,11 +321,50 @@ const inventory_list = (props) => {
       </div>
      </div>
     </div>
+    </div>
+    <div className="block md:hidden space-y-4 bg-gray-100">
+      <div className="flex justify-center items-center">
+        <h1 className="text-2xl font-bold">Inventory List</h1>
+      </div>
+      <div className="flex justify-center items-center">
+        <TextField
+          placeholder="Search items..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          size="small"
+          sx={{ width: '275px' }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          }}
+        />
+      </div>
+      <div className="flex justify-center items-center w-[275px] mx-auto">
+        <Button 
+        variant="contained" color="primary"
+        sx={{
+          width: '100%',
+          height: '40px',
+          borderRadius: '10px',
+          backgroundColor: 'primary.main',
+          color: 'white',
+        }}
+        >
+          Add Inventory
+        </Button>
+        </div>
+        <div className="flex justify-center items-center w-full">
+          <InventoryCard 
+              inventoryList={filteredItems}
+          />
+        </div>
 
-  </div>
-  )
-}
+      </div>
+    </div>
+  );
+};
 
-export default inventory_list
-
-
+export default inventory_list;

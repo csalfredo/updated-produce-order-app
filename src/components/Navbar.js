@@ -163,40 +163,37 @@ const Navbar = ({title, main }) => {
             }
           }}
         >
-          {isLoggedIn ? (
-            <>
-              <MenuItem onClick={handleLogout}>
+          {isLoggedIn ? [
+              <MenuItem key="logout" onClick={handleLogout}>
                 <LogoutIcon sx={{ mr: 2, fontSize: 20 }} />
                 Logout
-              </MenuItem>
-              {isAdmin && (
-              <MenuItem
-                onClick={handleInventoryList}
-                title={
-                  inventoryUpdated
-                    ? 'Inventory list has been updated (edits or unsaved changes)'
-                    : undefined
-                }
-              >
-                <InventoryIcon sx={{ mr: 2, fontSize: 20 }} />
-                Inventory List
-                {inventoryUpdated ? ' •' : ''}
-              </MenuItem>
-              )}
-              {isAdmin && (
-              <MenuItem onClick={handleHistoryOrder}>
-                <HistoryIcon sx={{ mr: 2, fontSize: 20 }} />
-                Order History
-              </MenuItem>
-              )}
-              {isLoggedIn && (
-              <MenuItem onClick={handleOrder}>
+              </MenuItem>,
+              isAdmin && (
+                <MenuItem
+                  key="inventory-list"
+                  onClick={handleInventoryList}
+                  title={
+                    inventoryUpdated
+                      ? 'Inventory list has been updated (edits or unsaved changes)'
+                      : undefined
+                  }
+                >
+                  <InventoryIcon sx={{ mr: 2, fontSize: 20 }} />
+                  Inventory List
+                  {inventoryUpdated ? ' •' : ''}
+                </MenuItem>
+              ),
+              isAdmin && (
+                <MenuItem key="order-history" onClick={handleHistoryOrder}>
+                  <HistoryIcon sx={{ mr: 2, fontSize: 20 }} />
+                  Order History
+                </MenuItem>
+              ),
+              <MenuItem key="current-order" onClick={handleOrder}>
                 <ShoppingCartIcon sx={{ mr: 2, fontSize: 20 }} />
                 Current Order
               </MenuItem>
-              )}
-            </>
-          ) : (
+            ] : (
             <MenuItem 
               onClick={handleClose}
               component={Link}
