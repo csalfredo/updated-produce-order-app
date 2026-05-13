@@ -59,7 +59,7 @@ const handleCloseNotification = () => {
                     </div>
                     <div className="w-full mt-4 flex flex-col gap-1 text-sm">
                         <div className="flex justify-between items-center gap-2">
-                            <p className="font-medium text-gray-700">Qty:</p>
+                            <p className="font-medium text-gray-700">Case Qty:</p>
                             <span className="text-gray-700">{item.quantity}</span>
                         </div>
                         <div className="flex justify-between items-center gap-2">
