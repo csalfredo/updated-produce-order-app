@@ -1,9 +1,35 @@
-import React from 'react';
-import { IconButton, Drawer } from '@mui/material';
+'use client';
+import React, { useState } from 'react';
+import { IconButton, Drawer, Snackbar, Alert } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import EditInventoryForm from './EditInventoryForm';
 
-const inventory_card = ({inventoryList}) => {
+const inventory_card = ({inventoryList, setInventory_Updated}) => {
+  const [open, setOpen] = useState(false);
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
+  const [editingItem, setEditingItem] = useState(null);
+  
+  const [notification, setNotification] = useState({
+    open: false,
+    message: '',
+    severity: 'success',
+});
+
+
+const handleCloseNotification = () => {
+    setNotification((prev) => ({
+        ...prev,
+        open: false,
+    }));
+};
+
+  const handleEdit = (item) => {
+    setOpen(true);
+    setEditingItem(item);
+    // setInventory_Updated((prev) => !prev);
+  };
   return (
     <div className="w-full px-4 py-4 flex justify-center items-center">
         <div className="flex flex-col items-center justify-center gap-4 w-full">
@@ -18,6 +44,7 @@ const inventory_card = ({inventoryList}) => {
                                  variant="contained" 
                                  color="primary"
                                  size="small"
+                                 onClick={()=>handleEdit(item)}
                                  >
                                     <EditIcon fontSize="small" />
                             </IconButton>
@@ -48,6 +75,41 @@ const inventory_card = ({inventoryList}) => {
                 </div>
             ))}
         </div>
+            <Drawer
+                anchor="bottom"
+                open={open}
+                onClose={handleClose}
+                BackdropProps={{
+                    sx: { backgroundColor: 'rgba(0, 0, 0, 0.55)' },
+                }}
+                PaperProps={{
+                    sx: {
+                        backgroundColor: 'transparent',
+                        boxShadow: 'none',
+                    },
+                }}
+            >
+                <EditInventoryForm 
+                    item={editingItem}
+                    handleClose={handleClose}
+                    setInventory_Updated={setInventory_Updated}
+                    setNotification={setNotification}
+                />
+            </Drawer>
+            <Snackbar
+                open={notification.open}
+                autoHideDuration={3000}
+                onClose={handleCloseNotification}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+                <Alert
+                    onClose={handleCloseNotification}
+                    severity={notification.severity}
+                    sx={{ width: '100%' }}
+                >
+                    {notification.message}
+                </Alert>
+            </Snackbar>
     </div>
   );
 };

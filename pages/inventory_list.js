@@ -56,26 +56,34 @@ const inventory_list = (props) => {
   const [editCaseCost, setEditCaseCost] = useState('');
   const [editPromoPrice, setEditPromoPrice] = useState('');
   const [editQuantity, setEditQuantity] = useState('');
+  const [inventory_Updated, setInventory_Updated] = useState(false);
   const { setInventoryUpdated } = useProduce();
 
+    const loadProduceItems = useCallback(async () => {
+      try {
+        setLoading(true);
+        const items = await produceAPI.getAllItems(); // ✅ API call here!
+        setProduceItems(items);
+        setFilteredItems(items);
+      } catch (error) {
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    }, []);
+  
     // ✅ Use the API function from api.js
     useEffect(() => {
-      const loadProduceItems = async () => {
-        try {
-          setLoading(true);
-          const items = await produceAPI.getAllItems(); // ✅ API call here!
-          setProduceItems(items);
-          setFilteredItems(items);
-        } catch (error) {
-          setError(error.message);
-        } finally {
-          setLoading(false);
-        }
-      };
-  
       loadProduceItems();
-    }, []);
+    }, [loadProduceItems]);
 
+    useEffect(() => {
+      if (inventory_Updated) {
+        loadProduceItems();
+        setInventory_Updated(false);
+      }
+    }, [inventory_Updated, loadProduceItems]);
+    
     // Filter items based on search term
     useEffect(() => {
       if (searchTerm === '') {
@@ -359,9 +367,10 @@ const inventory_list = (props) => {
         <div className="flex justify-center items-center w-full">
           <InventoryCard 
               inventoryList={filteredItems}
+              setInventory_Updated={setInventory_Updated}
           />
         </div>
-
+        
       </div>
     </div>
   );
