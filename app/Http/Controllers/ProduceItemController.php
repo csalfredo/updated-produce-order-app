@@ -97,6 +97,11 @@ class ProduceItemController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $item = ProduceItem::findOrFail($id);
+        $item->delete();
+
+        return response()->json([
+            'message' => 'Produce item deleted successfully',
+        ]);
     }
 }

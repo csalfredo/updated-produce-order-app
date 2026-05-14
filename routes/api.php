@@ -26,3 +26,4 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::get('/produce-items', [ProduceItemController::class, 'index']);
 Route::patch('/produce-items/{id}', [ProduceItemController::class, 'update']);
+Route::delete('/produce-items/{id}', [ProduceItemController::class, 'destroy']);

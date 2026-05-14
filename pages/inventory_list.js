@@ -3,7 +3,7 @@ import React, {useEffect, useState, useCallback} from 'react';
 import {produceAPI} from '../src/components/api';
 import { useProduce } from '../src/components/context/ProduceContext';
 import { useSwitch } from '@nextui-org/react';
-import { Stack, Autocomplete, TextField, Button, IconButton, MenuItem, Select, accordionSummaryClasses, CircularProgress, Pagination, InputAdornment } from "@mui/material"
+import { Stack, Autocomplete, TextField, Button, IconButton, MenuItem, Select, accordionSummaryClasses, CircularProgress, Pagination, InputAdornment, Snackbar, Alert } from "@mui/material"
 import Snackbar1 from '@mui/material/Snackbar';
 import queryString from 'query-string';
 import { Questrial } from 'next/font/google';
@@ -17,7 +17,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
 import SaveIcon from '@mui/icons-material/Save';
 import InventoryCard from './inventory_card';
-
+import useInventoryEditor from './useInventoryEditor';
 
 /**
  * 
@@ -52,12 +52,16 @@ const inventory_list = (props) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   /** Which row is in edit mode (null = none). Drives re-render so form fields show. */
-  const [editingId, setEditingId] = useState(null);
-  const [editCaseCost, setEditCaseCost] = useState('');
-  const [editPromoPrice, setEditPromoPrice] = useState('');
-  const [editQuantity, setEditQuantity] = useState('');
+  // const [editingId, setEditingId] = useState(null);
+  // const [editCaseCost, setEditCaseCost] = useState('');
+  // const [editPromoPrice, setEditPromoPrice] = useState('');
+  // const [editQuantity, setEditQuantity] = useState('');
   const [inventory_Updated, setInventory_Updated] = useState(false);
   const { setInventoryUpdated } = useProduce();
+
+
+
+
 
     const loadProduceItems = useCallback(async () => {
       try {
@@ -97,56 +101,85 @@ const inventory_list = (props) => {
       setCurrentPage(1); // Reset to first page when searching
     }, [searchTerm, produceItems]);
 
+
+
+    const {
+      editingId,
+      editCaseCost,
+      setEditCaseCost,
+      editPromoPrice,
+      setEditPromoPrice,
+      editQuantity,
+      setEditQuantity,
+      handleEdit,
+      handleCancelEdit,
+      handleSaveItem,
+      open,
+      setOpen,
+      editingItem,
+      setEditingItem,
+      handleDeleteItem,
+      setUpdate_Inventory,
+      update_Inventory,
+    } = useInventoryEditor({
+      produceItems,
+      setProduceItems,
+      setInventoryUpdated,
+    });
+  
+
+
     // Calculate pagination
     const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const currentItems = filteredItems.slice(startIndex, endIndex);
 
-    const handleEdit = (id) => {
-      const item = produceItems.find((i) => i.id === id);
-      if (!item) return;
-      setEditingId(id);
-      setEditCaseCost(String(item.case_cost ?? ''));
-      setEditPromoPrice(String(item.promo_price ?? ''));
-      setEditQuantity(String(item.quantity ?? ''));
-      setInventoryUpdated(true);
-    };
+    // const handleEdit = (id) => {
+    //   const item = produceItems.find((i) => i.id === id);
+    //   if (!item) return;
+    //   setEditingId(id);
+    //   setEditCaseCost(String(item.case_cost ?? ''));
+    //   setEditPromoPrice(String(item.promo_price ?? ''));
+    //   setEditQuantity(String(item.quantity ?? ''));
+    //   setInventoryUpdated(true);
+    // };
 
-    const resetEditForm = () => {
-      setEditingId(null);
-      setEditCaseCost('');
-      setEditPromoPrice('');
-      setEditQuantity('');
-    };
+    // const resetEditForm = () => {
+    //   setEditingId(null);
+    //   setEditCaseCost('');
+    //   setEditPromoPrice('');
+    //   setEditQuantity('');
+    // };
 
-    const handleCancelEdit = () => {
-      resetEditForm();
-      setInventoryUpdated(false);
-    };
+    // const handleCancelEdit = () => {
+    //   resetEditForm();
+    //   setInventoryUpdated(false);
+    // };
 
-    const handleSaveItem = async (item) => {
-      const cost = parseFloat(editCaseCost);
-      const promo = parseFloat(editPromoPrice);
-      const quantity = parseInt(editQuantity);
-      if (Number.isNaN(cost) || Number.isNaN(promo) || Number.isNaN(quantity)) {
-        return;
-      }
-      setProduceItems((prev) =>
-        prev.map((i) =>
-          i.id === item.id ? { ...i, case_cost: cost, promo_price: promo, quantity: quantity } : i
-        )
-      );
-      resetEditForm();
+    // const handleSaveItem = async (item) => {
+    //   const cost = parseFloat(editCaseCost);
+    //   const promo = parseFloat(editPromoPrice);
+    //   const quantity = parseInt(editQuantity);
+    //   if (Number.isNaN(cost) || Number.isNaN(promo) || Number.isNaN(quantity)) {
+    //     return;
+    //   }
+    //   setProduceItems((prev) =>
+    //     prev.map((i) =>
+    //       i.id === item.id ? { ...i, case_cost: cost, promo_price: promo, quantity: quantity } : i
+    //     )
+    //   );
+    //   resetEditForm();
 
-      const response = await produceAPI.updateItemById(item.id, {
-        case_cost: cost,
-        promo_price: promo,
-        quantity: quantity
-      });
-      console.log('Updated item:', response.data);
-      setInventoryUpdated(true);
-    };
+    //   const response = await produceAPI.updateItemById(item.id, {
+    //     case_cost: cost,
+    //     promo_price: promo,
+    //     quantity: quantity
+    //   });
+    //   console.log('Updated item:', response.data);
+    //   setInventoryUpdated(true);
+    // };
+
 
   return (
     
@@ -284,7 +317,7 @@ const inventory_list = (props) => {
                       height: '24px',
                       padding: '2px',
                     }}
-                    onClick={() => handleEdit(item.id)}
+                    onClick={() => handleEdit(item)}
                   >
                     <EditIcon fontSize="small" />
                   </Button>
@@ -296,6 +329,7 @@ const inventory_list = (props) => {
                       height: '24px',
                       padding: '2px',
                     }}
+                    onClick={() => handleDeleteItem(item)}
                   >
                     <DeleteIcon fontSize="small" />
                   </Button>
@@ -305,6 +339,15 @@ const inventory_list = (props) => {
           </div>
         ))}
       </div>
+      <Snackbar 
+       open={update_Inventory} 
+       autoHideDuration={3000} 
+       onClose={() => setUpdate_Inventory(false)}
+       anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+        <Alert onClose={() => setUpdate_Inventory(false)} severity="success">
+          Inventory updated successfully
+        </Alert>
+      </Snackbar>
       <div className='bg-gray-100'>
       {/* Pagination Controls */}
       {totalPages > 1 && (

@@ -38,4 +38,14 @@ export const produceAPI = {
     const response = await apiClient.patch(`/api/produce-items/${id}`, payload);
     return response;
   },
+
+  deleteItemById: async (id)=>{
+    try{
+      const response = await apiClient.delete(`/api/produce-items/${id}`);
+      return response;
+    } catch (error) {
+      console.error('Error deleting produce item:', error);
+      throw new Error('Failed to delete produce item');
+    }
+  }
 };

@@ -4,19 +4,43 @@ import { IconButton, Drawer, Snackbar, Alert } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditInventoryForm from './EditInventoryForm';
+import useInventoryEditor from './useInventoryEditor';
+import { useProduce } from '../src/components/context/ProduceContext';
+
 
 const inventory_card = ({inventoryList, setInventory_Updated}) => {
-  const [open, setOpen] = useState(false);
+//   const [open, setOpen] = useState(false);
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
-  const [editingItem, setEditingItem] = useState(null);
-  
+//   const [editingItem, setEditingItem] = useState(null);
+  const [produceItems, setProduceItems] = useState([]);
+  const { setInventoryUpdated } = useProduce();
   const [notification, setNotification] = useState({
     open: false,
     message: '',
     severity: 'success',
 });
 
+const {
+    editingId,
+    editCaseCost,
+    setEditCaseCost,
+    editPromoPrice,
+    setEditPromoPrice,
+    editQuantity,
+    setEditQuantity,
+    handleEdit,
+    handleCancelEdit,
+    handleSaveItem,
+    open,
+    setOpen,
+    editingItem,
+    setEditingItem,
+  } = useInventoryEditor({
+    produceItems,
+    setProduceItems,
+    setInventoryUpdated,
+  });
 
 const handleCloseNotification = () => {
     setNotification((prev) => ({
@@ -25,11 +49,12 @@ const handleCloseNotification = () => {
     }));
 };
 
-  const handleEdit = (item) => {
-    setOpen(true);
-    setEditingItem(item);
-    // setInventory_Updated((prev) => !prev);
-  };
+//   const handleEdit = (item) => {
+//     setOpen(true);
+//     setEditingItem(item);
+//   };
+
+
   return (
     <div className="w-full px-4 py-4 flex justify-center items-center">
         <div className="flex flex-col items-center justify-center gap-4 w-full">
@@ -44,7 +69,7 @@ const handleCloseNotification = () => {
                                  variant="contained" 
                                  color="primary"
                                  size="small"
-                                 onClick={()=>handleEdit(item)}
+                                 onClick={() => handleEdit(item)}
                                  >
                                     <EditIcon fontSize="small" />
                             </IconButton>
