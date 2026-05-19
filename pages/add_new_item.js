@@ -2,12 +2,17 @@ import React, { useState } from "react";
 import { TextField, Button, Alert, CircularProgress } from "@mui/material";
 import { produceAPI } from "../src/components/api";
 
-const AddNewItem = ({ setAddNewItem, setInventory_Updated }) => {
+const AddNewItem = ({
+    setAddNewItem,
+    setInventory_Updated,
+    showInventoryNotification,
+}) => {
     const [name, setName] = useState("");
     const [caseCost, setCaseCost] = useState("");
     const [quantity, setQuantity] = useState("");
     const [error, setError] = useState(null);
     const [submitting, setSubmitting] = useState(false);
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -28,17 +33,42 @@ const AddNewItem = ({ setAddNewItem, setInventory_Updated }) => {
             return;
         }
 
+        const trimmedName = name.trim();
+
         try {
             setSubmitting(true);
-            await produceAPI.createItem({
-                name: name.trim(),
+
+            const existingItems = await produceAPI.getAllItems();
+            const alreadyExists = existingItems.some(
+                (item) =>
+                    (item.name || "").trim().toLowerCase() ===
+                    trimmedName.toLowerCase(),
+            );
+
+            if (alreadyExists) {
+                showInventoryNotification?.(
+                    "The item already exist",
+                    "warning",
+                );
+                return;
+            }
+
+            const response = await produceAPI.createItem({
+                name: trimmedName,
                 case_cost: cost,
                 quantity: qty,
             });
-            if (setInventory_Updated) {
-                setInventory_Updated(true);
+
+            if (response.status === 201 && response.data?.item) {
+                if (setInventory_Updated) setInventory_Updated(true);
+                showInventoryNotification?.(
+                    "Item added successfully",
+                    "success",
+                );
+                setAddNewItem(false);
+            } else {
+                setError("Unexpected response from server.");
             }
-            setAddNewItem(false);
         } catch (err) {
             setError(err.message || "Failed to add item.");
         } finally {
@@ -101,20 +131,24 @@ const AddNewItem = ({ setAddNewItem, setInventory_Updated }) => {
                             disabled={submitting}
                         />
                     </div>
-                    <Button
-                        type="submit"
-                        variant="contained"
-                        color="primary"
-                        sx={{ width: 240 }}
-                        disabled={submitting}
-                    >
-                        {submitting ? (
-                            <CircularProgress size={24} color="inherit" />
-                        ) : (
-                            "Add Item"
-                        )}
-                    </Button>
+                    <div className="w-full flex justify-center items-center max-w-[240px]">
+                        <Button
+                            type="submit"
+                            variant="contained"
+                            color="primary"
+                            disabled={submitting}
+                            fullWidth
+                        >
+                            {submitting ? (
+                                <CircularProgress size={24} color="inherit" />
+                            ) : (
+                                "Add Item"
+                            )}
+                        </Button>
+                    </div>
+
                 </form>
+
             </div>
         </div>
     );

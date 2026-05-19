@@ -155,6 +155,17 @@ const inventory_list = (props) => {
     const endIndex = startIndex + itemsPerPage;
     const currentItems = filteredItems.slice(startIndex, endIndex);
 
+    const inventoryTableColDesc =
+        "flex justify-start items-center border-r border-gray-400 p-2 flex-[2] min-w-0 basis-0";
+    const inventoryTableColNum =
+        "flex justify-end items-center border-r border-gray-400 p-2 flex-1 min-w-[4.5rem] shrink-0";
+    const inventoryTableColAction =
+        "flex justify-center items-center p-2 w-24 shrink-0 border-l border-gray-400 gap-1";
+    const inventoryTableHeaderLabel =
+        "text-sm font-medium whitespace-nowrap";
+    const inventoryTableCellText =
+        "w-full text-sm tabular-nums";
+
     // const handleEdit = (id) => {
     //   const item = produceItems.find((i) => i.id === id);
     //   if (!item) return;
@@ -247,25 +258,42 @@ const inventory_list = (props) => {
                         </Button>
                     </div>
                 </div>
-                <div className="flex justify-center items-center mb-4">
-                    <div className="border border-gray-200 rounded-md w-1/2">
-                        <div className="flex flex-col-5 border border-black w-full">
-                            <div className="flex justify-center items-center border-r border-gray-400 p-1 flex-1">
-                                <p>Description</p>
+                <div className="flex justify-center mb-4 px-4">
+                    <div className="w-full max-w-5xl overflow-x-auto border border-black rounded-lg">
+                        <div className="min-w-[36rem]">
+                            <div className="flex flex-row border-b border-black bg-gray-50">
+                                <div className={inventoryTableColDesc}>
+                                    <p className={inventoryTableHeaderLabel}>
+                                        Description
+                                    </p>
+                                </div>
+                                <div className={inventoryTableColNum}>
+                                    <p
+                                        className={`${inventoryTableHeaderLabel} text-right`}
+                                    >
+                                        Quantity
+                                    </p>
+                                </div>
+                                <div className={inventoryTableColNum}>
+                                    <p
+                                        className={`${inventoryTableHeaderLabel} text-right`}
+                                    >
+                                        Price
+                                    </p>
+                                </div>
+                                <div className={inventoryTableColNum}>
+                                    <p
+                                        className={`${inventoryTableHeaderLabel} text-right`}
+                                    >
+                                        Promo Price
+                                    </p>
+                                </div>
+                                <div className={inventoryTableColAction}>
+                                    <p className={inventoryTableHeaderLabel}>
+                                        Action
+                                    </p>
+                                </div>
                             </div>
-                            <div className="flex justify-center items-center border-r border-gray-400 p-1 flex-1">
-                                <p>Quantity</p>
-                            </div>
-                            <div className="flex justify-center items-center border-r border-gray-400 p-1 flex-1">
-                                <p>Price</p>
-                            </div>
-                            <div className="flex justify-center items-center p-1 flex-1">
-                                <p>Promo Price</p>
-                            </div>
-                            <div className="flex justify-center items-center p-1 flex-1 border-l border-gray-400">
-                                <p>Action</p>
-                            </div>
-                        </div>
                         {loading && <CircularProgress />}
                         {error && <div>Error: {error}</div>}
                         <div>
@@ -274,10 +302,15 @@ const inventory_list = (props) => {
                                     key={item.id}
                                     className="flex flex-row border-b border-gray-200 w-full"
                                 >
-                                    <div className="flex justify-center items-center border-r border-gray-400 p-2 flex-1">
-                                        <p>{item.name}</p>
+                                    <div className={inventoryTableColDesc}>
+                                        <p
+                                            className="w-full truncate text-sm text-left"
+                                            title={item.name}
+                                        >
+                                            {item.name}
+                                        </p>
                                     </div>
-                                    <div className="flex justify-center items-center border-r border-gray-400 p-2 flex-1">
+                                    <div className={inventoryTableColNum}>
                                         {editingId === item.id ? (
                                             <TextField
                                                 label="Quantity"
@@ -295,10 +328,10 @@ const inventory_list = (props) => {
                                                 }}
                                             />
                                         ) : (
-                                            <p>{item.quantity}</p>
+                                            <p className={`${inventoryTableCellText} text-right`}>{item.quantity}</p>
                                         )}
                                     </div>
-                                    <div className="flex justify-center items-center border-r border-gray-400 p-2 flex-1">
+                                    <div className={inventoryTableColNum}>
                                         {editingId === item.id ? (
                                             <TextField
                                                 label="Price"
@@ -316,10 +349,10 @@ const inventory_list = (props) => {
                                                 }}
                                             />
                                         ) : (
-                                            <p>${item.case_cost}</p>
+                                            <p className={`${inventoryTableCellText} text-right`}>${item.case_cost}</p>
                                         )}
                                     </div>
-                                    <div className="flex justify-center items-center p-2 flex-1">
+                                    <div className={inventoryTableColNum}>
                                         {editingId === item.id ? (
                                             <TextField
                                                 label="Promo"
@@ -337,10 +370,10 @@ const inventory_list = (props) => {
                                                 }}
                                             />
                                         ) : (
-                                            <p>${item.promo_price}</p>
+                                            <p className={`${inventoryTableCellText} text-right`}>${item.promo_price}</p>
                                         )}
                                     </div>
-                                    <div className="flex justify-center items-center p-2 flex-1 border-l border-gray-400 gap-2">
+                                    <div className={inventoryTableColAction}>
                                         {editingId === item.id ? (
                                             <>
                                                 <IconButton
@@ -398,22 +431,6 @@ const inventory_list = (props) => {
                                 </div>
                             ))}
                         </div>
-                        <Snackbar
-                            open={inventoryNotification.open}
-                            autoHideDuration={3000}
-                            onClose={closeInventoryNotification}
-                            anchorOrigin={{
-                                vertical: "top",
-                                horizontal: "center",
-                            }}
-                        >
-                            <Alert
-                                onClose={closeInventoryNotification}
-                                severity={inventoryNotification.severity}
-                            >
-                                {inventoryNotification.message}
-                            </Alert>
-                        </Snackbar>
                         <div className="bg-gray-100">
                             {/* Pagination Controls */}
                             {totalPages > 1 && (
@@ -442,6 +459,7 @@ const inventory_list = (props) => {
                         </div>
                     </div>
                 </div>
+            </div>
             </div>
             <div className="block md:hidden space-y-4 bg-gray-100">
                 <div className="mb-10">
@@ -489,6 +507,7 @@ const inventory_list = (props) => {
                     />
                 </div>
             </div>
+
             <Drawer
                 anchor="top"
                 open={addNewItem}
@@ -506,8 +525,23 @@ const inventory_list = (props) => {
                 <AddNewItem
                     setAddNewItem={setAddNewItem}
                     setInventory_Updated={setInventory_Updated}
+                    showInventoryNotification={showInventoryNotification}
                 />
             </Drawer>
+            <Snackbar
+                open={inventoryNotification.open}
+                autoHideDuration={3000}
+                onClose={closeInventoryNotification}
+                anchorOrigin={{ vertical: "top", horizontal: "center" }}
+            >
+                <Alert
+                    onClose={closeInventoryNotification}
+                    severity={inventoryNotification.severity}
+                    sx={{ width: "100%" }}
+                >
+                    {inventoryNotification.message}
+                </Alert>
+            </Snackbar>
         </div>
     );
 };
