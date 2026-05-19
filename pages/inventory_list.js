@@ -65,16 +65,29 @@ const inventory_list = (props) => {
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
-    /** Which row is in edit mode (null = none). Drives re-render so form fields show. */
-    // const [editingId, setEditingId] = useState(null);
-    // const [editCaseCost, setEditCaseCost] = useState('');
-    // const [editPromoPrice, setEditPromoPrice] = useState('');
-    // const [editQuantity, setEditQuantity] = useState('');
-    const handleOpen = () => setOpen(true);
-    const handleClose = () => setOpen(false);
     const [inventory_Updated, setInventory_Updated] = useState(false);
+    const [inventoryNotification, setInventoryNotification] = useState({
+        open: false,
+        message: "",
+        severity: "success",
+    });
     const { setInventoryUpdated } = useProduce();
     const [addNewItem, setAddNewItem] = useState(false);
+
+    const showInventoryNotification = (message, severity = "success") => {
+        setInventoryNotification({
+            open: true,
+            message,
+            severity,
+        });
+    };
+
+    const closeInventoryNotification = () => {
+        setInventoryNotification((prev) => ({
+            ...prev,
+            open: false,
+        }));
+    };
     const loadProduceItems = useCallback(async () => {
         try {
             setLoading(true);
@@ -129,12 +142,11 @@ const inventory_list = (props) => {
         editingItem,
         setEditingItem,
         handleDeleteItem,
-        setUpdate_Inventory,
-        update_Inventory,
     } = useInventoryEditor({
         produceItems,
         setProduceItems,
         setInventoryUpdated,
+        showInventoryNotification,
     });
 
     // Calculate pagination
@@ -387,19 +399,19 @@ const inventory_list = (props) => {
                             ))}
                         </div>
                         <Snackbar
-                            open={update_Inventory}
+                            open={inventoryNotification.open}
                             autoHideDuration={3000}
-                            onClose={() => setUpdate_Inventory(false)}
+                            onClose={closeInventoryNotification}
                             anchorOrigin={{
                                 vertical: "top",
                                 horizontal: "center",
                             }}
                         >
                             <Alert
-                                onClose={() => setUpdate_Inventory(false)}
-                                severity="success"
+                                onClose={closeInventoryNotification}
+                                severity={inventoryNotification.severity}
                             >
-                                Inventory updated successfully
+                                {inventoryNotification.message}
                             </Alert>
                         </Snackbar>
                         <div className="bg-gray-100">
@@ -470,26 +482,6 @@ const inventory_list = (props) => {
                         Add Inventory
                     </Button>
                 </div>
-                {addNewItem && (
-                    <div className="flex justify-center items-center w-full">
-                        <Drawer
-                            anchor="top"
-                            open={addNewItem}
-                            onClose={() => setAddNewItem(false)}
-                            BackdropProps={{
-                                sx: { backgroundColor: "rgba(0, 0, 0, 0.55)" },
-                            }}
-                            PaperProps={{
-                                sx: {
-                                    backgroundColor: "transparent",
-                                    boxShadow: "none",
-                                },
-                            }}
-                        >
-                            <AddNewItem setAddNewItem={setAddNewItem} />
-                        </Drawer>
-                    </div>
-                )}
                 <div className="flex justify-center items-center w-full">
                     <InventoryCard
                         inventoryList={filteredItems}
@@ -497,6 +489,22 @@ const inventory_list = (props) => {
                     />
                 </div>
             </div>
+            <Drawer
+                anchor="top"
+                open={addNewItem}
+                onClose={() => setAddNewItem(false)}
+                BackdropProps={{
+                    sx: { backgroundColor: "rgba(0, 0, 0, 0.55)" },
+                }}
+                PaperProps={{
+                    sx: {
+                        backgroundColor: "transparent",
+                        boxShadow: "none",
+                    },
+                }}
+            >
+                <AddNewItem setAddNewItem={setAddNewItem} />
+            </Drawer>
         </div>
     );
 };

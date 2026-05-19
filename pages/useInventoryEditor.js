@@ -6,6 +6,7 @@ export default function useInventoryEditor({
   produceItems,
   setProduceItems,
   setInventoryUpdated = () => {},
+  showInventoryNotification = () => {},
 }) {
   const [editingId, setEditingId] = useState(null);
   const [editCaseCost, setEditCaseCost] = useState('');
@@ -13,7 +14,6 @@ export default function useInventoryEditor({
   const [editQuantity, setEditQuantity] = useState('');
   const [open, setOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
-  const [update_Inventory, setUpdate_Inventory] = useState(false);
   //     setOpen(true);
 //     setEditingItem(item);
 
@@ -76,7 +76,7 @@ const handleEdit = (item) => {
       quantity: quantity
     });
     console.log('Updated item:', response.data);
-    setUpdate_Inventory(true);
+    showInventoryNotification('Inventory item updated successfully.');
     setInventoryUpdated(true);
   };
 
@@ -84,7 +84,7 @@ const handleEdit = (item) => {
     const response = await produceAPI.deleteItemById(item.id);
     console.log('Deleted item:', response.data);
     setProduceItems((prev) => prev.filter((i) => i.id !== item.id));
-    setUpdate_Inventory(true);
+    showInventoryNotification('Inventory item deleted successfully.');
     setInventoryUpdated(true);
   };
 
@@ -105,7 +105,5 @@ const handleEdit = (item) => {
     editingItem,
     setEditingItem,
     handleDeleteItem,
-    setUpdate_Inventory,
-    update_Inventory,
   };
 }
