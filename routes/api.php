@@ -16,14 +16,15 @@ Route::middleware(['api'])->group(function () {
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy']);
-    Route::get('/user', function (Request $request) {  // Remove duplicate middleware
+    Route::get('/user', function (Request $request) {
         return $request->user();
     });
     Route::post('/orders', [OrderController::class, 'store']);
     Route::get('/orders', [OrderController::class, 'index']);
-    // Other protected routes...
+
+    Route::post('/produce-items', [ProduceItemController::class, 'store']);
+    Route::patch('/produce-items/{id}', [ProduceItemController::class, 'update']);
+    Route::delete('/produce-items/{id}', [ProduceItemController::class, 'destroy']);
 });
 
 Route::get('/produce-items', [ProduceItemController::class, 'index']);
-Route::patch('/produce-items/{id}', [ProduceItemController::class, 'update']);
-Route::delete('/produce-items/{id}', [ProduceItemController::class, 'destroy']);

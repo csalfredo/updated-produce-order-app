@@ -470,26 +470,6 @@ const inventory_list = (props) => {
                         Add Inventory
                     </Button>
                 </div>
-                {addNewItem && (
-                    <div className="flex justify-center items-center w-full">
-                        <Drawer
-                            anchor="top"
-                            open={addNewItem}
-                            onClose={() => setAddNewItem(false)}
-                            BackdropProps={{
-                                sx: { backgroundColor: "rgba(0, 0, 0, 0.55)" },
-                            }}
-                            PaperProps={{
-                                sx: {
-                                    backgroundColor: "transparent",
-                                    boxShadow: "none",
-                                },
-                            }}
-                        >
-                            <AddNewItem setAddNewItem={setAddNewItem} />
-                        </Drawer>
-                    </div>
-                )}
                 <div className="flex justify-center items-center w-full">
                     <InventoryCard
                         inventoryList={filteredItems}
@@ -497,6 +477,25 @@ const inventory_list = (props) => {
                     />
                 </div>
             </div>
+            <Drawer
+                anchor="top"
+                open={addNewItem}
+                onClose={() => setAddNewItem(false)}
+                BackdropProps={{
+                    sx: { backgroundColor: "rgba(0, 0, 0, 0.55)" },
+                }}
+                PaperProps={{
+                    sx: {
+                        backgroundColor: "transparent",
+                        boxShadow: "none",
+                    },
+                }}
+            >
+                <AddNewItem
+                    setAddNewItem={setAddNewItem}
+                    setInventory_Updated={setInventory_Updated}
+                />
+            </Drawer>
         </div>
     );
 };
