@@ -46,7 +46,38 @@ class ProduceItemController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'case_cost' => 'required|numeric|min:0',
+            'quantity' => 'required|integer|min:0',
+            'product_code' => 'sometimes|string|max:255',
+            'inventory' => 'sometimes|string',
+            'case_size' => 'sometimes|string|max:255',
+            'promo_price' => 'sometimes|numeric|min:0',
+            'stock' => 'sometimes|boolean',
+            'produce_image' => 'nullable|string|max:2048',
+        ]);
+
+        $item = ProduceItem::create([
+            'user_id' => $request->user()->id,
+            'name' => $validated['name'],
+            'product_code' => $validated['product_code']
+                ?? 'INV-' . strtoupper(substr(uniqid(), -6)),
+            'inventory' => $validated['inventory'] ?? (string) $validated['quantity'],
+            'case_cost' => $validated['case_cost'],
+            'case_size' => $validated['case_size'] ?? '1 case',
+            'promo_price' => $validated['promo_price'] ?? 0,
+            'stock' => $validated['stock'] ?? true,
+            'produce_image' => $validated['produce_image'] ?? null,
+            'quantity' => $validated['quantity'],
+        ]);
+
+        Log::info('Produce item created: ' . $item->id . ' (' . $item->name . ')');
+
+        return response()->json([
+            'message' => 'Produce item created successfully',
+            'item' => $item,
+        ], 201);
     }
 
     /**

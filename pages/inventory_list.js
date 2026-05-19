@@ -503,7 +503,10 @@ const inventory_list = (props) => {
                     },
                 }}
             >
-                <AddNewItem setAddNewItem={setAddNewItem} />
+                <AddNewItem
+                    setAddNewItem={setAddNewItem}
+                    setInventory_Updated={setInventory_Updated}
+                />
             </Drawer>
         </div>
     );

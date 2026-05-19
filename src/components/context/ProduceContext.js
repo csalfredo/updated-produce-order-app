@@ -112,20 +112,26 @@ export const ProduceProvider = ({ children }) => {
             console.log("Number of items fetched:", response.data.count);
             console.log("Available items:", response.data.debug?.item_names);
 
-            const transformedItems = response.data.items.map((item) => ({
-                id: item.id,
-                name: item.name,
-                product_code: item.product_code,
-                inventory: item.inventory,
-                case_cost: parseFloat(item.case_cost),
-                case_size: item.case_size,
-                promo_price: parseFloat(item.promo_price),
-                stock: item.stock,
-                produce_Image:
-                    imageMapping[item.produce_image.split("/").pop()] || null,
-                Qty: 1,
-                totalBalance: 0.0,
-            }));
+            const transformedItems = response.data.items.map((item) => {
+                const imageKey = item.produce_image
+                    ? item.produce_image.split("/").pop()
+                    : null;
+                return {
+                    id: item.id,
+                    name: item.name,
+                    product_code: item.product_code,
+                    inventory: item.inventory,
+                    case_cost: parseFloat(item.case_cost),
+                    case_size: item.case_size,
+                    promo_price: parseFloat(item.promo_price),
+                    stock: item.stock,
+                    produce_Image: imageKey
+                        ? imageMapping[imageKey] || null
+                        : null,
+                    Qty: 1,
+                    totalBalance: 0.0,
+                };
+            });
 
             setProduceListItems(transformedItems);
         } catch (error) {

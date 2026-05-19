@@ -33,6 +33,18 @@ export const produceAPI = {
     }
   },
 
+  createItem: async (payload) => {
+    try {
+      const response = await apiClient.post('/api/produce-items', payload);
+      return response;
+    } catch (error) {
+      console.error('Error creating produce item:', error);
+      throw new Error(
+        error.response?.data?.message || 'Failed to create produce item',
+      );
+    }
+  },
+
   updateItemById: async (id, payload) => {
     // CSRF: api/produce-items* is excluded in App\VerifyCsrfToken (Sanctum stateful stack).
     const response = await apiClient.patch(`/api/produce-items/${id}`, payload);
