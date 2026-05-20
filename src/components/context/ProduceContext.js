@@ -118,15 +118,19 @@ export const ProduceProvider = ({ children }) => {
                 const imageKey = item.produce_image
                     ? item.produce_image.split("/").pop()
                     : null;
+                const quantity = Number(item.quantity ?? 0);
+                // In-stock follows quantity; `stock` flag can lag behind admin edits
+                const inStock = quantity > 0;
                 return {
                     id: item.id,
                     name: item.name,
                     product_code: item.product_code,
-                    inventory: item.inventory,
+                    inventory: String(quantity),
+                    quantity,
                     case_cost: parseFloat(item.case_cost),
                     case_size: item.case_size,
                     promo_price: parseFloat(item.promo_price),
-                    stock: item.stock,
+                    stock: inStock,
                     produce_Image: imageKey
                         ? imageMapping[imageKey] || null
                         : null,
@@ -210,6 +214,7 @@ export const ProduceProvider = ({ children }) => {
                 loading,
                 inventoryUpdated,
                 setInventoryUpdated,
+                refreshProduceCatalog: fetchProduceItems,
                 isLoggedIn,
                 isAdmin,
                 authMessage,

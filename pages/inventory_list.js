@@ -13,6 +13,8 @@ import {
     Alert,
     Box,
     Typography,
+    useMediaQuery,
+    useTheme,
 } from "@mui/material";
 import Navbar from "../src/components/Navbar";
 import EditIcon from "@mui/icons-material/Edit";
@@ -50,6 +52,9 @@ import InventoryDeleteDialog from "./InventoryDeleteDialog";
  */
 
 const inventory_list = (props) => {
+    const theme = useTheme();
+    const isMobileView = useMediaQuery(theme.breakpoints.down("md"));
+
     const [produceItems, setProduceItems] = useState([]);
     const [filteredItems, setFilteredItems] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -66,10 +71,24 @@ const inventory_list = (props) => {
     const { setInventoryUpdated } = useProduce();
     const [addNewItem, setAddNewItem] = useState(false);
 
-    const showInventoryNotification = (message, severity = "success") => {
+    /** Accepts (message, severity) or a { message, severity } object from EditInventoryForm. */
+    const showInventoryNotification = (messageOrPayload, severity = "success") => {
+        if (
+            messageOrPayload &&
+            typeof messageOrPayload === "object" &&
+            !Array.isArray(messageOrPayload) &&
+            "message" in messageOrPayload
+        ) {
+            setInventoryNotification({
+                open: true,
+                message: messageOrPayload.message,
+                severity: messageOrPayload.severity ?? "success",
+            });
+            return;
+        }
         setInventoryNotification({
             open: true,
-            message,
+            message: messageOrPayload,
             severity,
         });
     };
@@ -126,7 +145,8 @@ const inventory_list = (props) => {
         setEditPromoPrice,
         editQuantity,
         setEditQuantity,
-        handleEdit,
+        handleInlineEdit,
+        handleDrawerEdit,
         handleCancelEdit,
         handleSaveItem,
         open,
@@ -434,7 +454,7 @@ const inventory_list = (props) => {
                                                         padding: "2px",
                                                     }}
                                                     onClick={() =>
-                                                        handleEdit(item)
+                                                        handleInlineEdit(item)
                                                     }
                                                 >
                                                     <EditIcon fontSize="small" />
@@ -519,11 +539,11 @@ const inventory_list = (props) => {
                     <InventoryCard
                         inventoryList={currentItems}
                         requestDeleteItem={requestDeleteItem}
-                        onEditItem={handleEdit}
+                        onEditItem={handleDrawerEdit}
                     />
                     <Drawer
                         anchor="bottom"
-                        open={open}
+                        open={open && isMobileView}
                         onClose={() => setOpen(false)}
                         BackdropProps={{ sx: { backgroundColor: "rgba(0, 0, 0, 0.55)" } }}
                         PaperProps={{ sx: { backgroundColor: "transparent", boxShadow: "none" } }}
@@ -532,6 +552,7 @@ const inventory_list = (props) => {
                             item={editingItem}
                             handleClose={() => setOpen(false)}
                             setInventory_Updated={setInventory_Updated}
+                            onCatalogChanged={() => setInventoryUpdated(true)}
                             setNotification={(msg) => showInventoryNotification(msg, 'success')}
                         />
                     </Drawer>

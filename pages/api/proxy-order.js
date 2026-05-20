@@ -77,9 +77,15 @@ export default async function handler(req, res) {
         });
       }
       
+      const data = error.response.data;
+      const message =
+        data?.message ||
+        (data?.errors && Object.values(data.errors).flat()[0]) ||
+        'Order could not be placed';
+
       return res.status(error.response.status).json({
-        message: 'Laravel error',
-        error: error.response.data
+        message,
+        error: data,
       });
     } else {
       // Network error or other issue

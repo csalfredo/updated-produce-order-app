@@ -13,12 +13,12 @@ class OrderItem extends Model
     protected $fillable = [
         'order_id',
         'user_id',
+        'produce_item_id',
         'name',
         'quantity',
         'price',
         'promo_price',
         'product_code',
-        // Add any other fields you're mass-assigning
     ];
 
     /**

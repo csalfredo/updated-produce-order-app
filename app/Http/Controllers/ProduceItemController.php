@@ -58,6 +58,11 @@ class ProduceItemController extends Controller
             'produce_image' => 'nullable|string|max:2048',
         ]);
 
+        $qty = (int) $validated['quantity'];
+        $inStock = array_key_exists('stock', $validated)
+            ? (bool) $validated['stock']
+            : ($qty > 0);
+
         $item = ProduceItem::create([
             'user_id' => $request->user()->id,
             'name' => $validated['name'],
@@ -67,9 +72,9 @@ class ProduceItemController extends Controller
             'case_cost' => $validated['case_cost'],
             'case_size' => $validated['case_size'] ?? '1 case',
             'promo_price' => $validated['promo_price'] ?? 0,
-            'stock' => $validated['stock'] ?? true,
+            'stock' => $inStock,
             'produce_image' => $validated['produce_image'] ?? null,
-            'quantity' => $validated['quantity'],
+            'quantity' => $qty,
         ]);
 
         Log::info('Produce item created: ' . $item->id . ' (' . $item->name . ')');
@@ -114,6 +119,17 @@ class ProduceItemController extends Controller
             'produce_image' => 'nullable|string|max:2048',
             'quantity' => 'sometimes|integer|min:0',
         ]);
+
+        // Keep `stock` and display inventory aligned when quantity changes.
+        if (array_key_exists('quantity', $validated)) {
+            $qty = (int) $validated['quantity'];
+            if (! array_key_exists('stock', $validated)) {
+                $validated['stock'] = $qty > 0;
+            }
+            if (! array_key_exists('inventory', $validated)) {
+                $validated['inventory'] = (string) $qty;
+            }
+        }
 
         $item->update($validated);
 

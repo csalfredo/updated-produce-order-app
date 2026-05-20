@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Button, Snackbar, TextField } from '@mui/material';
 import {produceAPI} from '../src/components/api';
 
-const EditInventoryForm = ({item, handleClose, setInventory_Updated, setNotification}) => {
+const EditInventoryForm = ({ item, handleClose, setInventory_Updated, setNotification, onCatalogChanged }) => {
  
 
 
@@ -60,14 +60,18 @@ const EditInventoryForm = ({item, handleClose, setInventory_Updated, setNotifica
         // resetEditForm();
   
         try {
+          const inStock = quantity > 0;
           const response = await produceAPI.updateItemById(itemId, {
             name: formValues.name,
             case_cost: cost,
             promo_price: promo,
-            quantity: quantity
+            quantity,
+            stock: inStock,
+            inventory: String(quantity),
           });
           console.log('Updated item:', response.data);
           setInventory_Updated((prev) => !prev);
+          onCatalogChanged?.();
           setNotification({
             open: true,
             message: 'Inventory item updated successfully.',

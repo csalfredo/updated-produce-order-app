@@ -11,7 +11,7 @@ import axios from 'axios';
 import Navbar from '../src/components/Navbar';
 
 const ProduceList = () => {
-  const { updateProduceList, userCurrentOrder, updateUserOrder, updateTotalBalance, totalBalance,clearOrder, updateCurrentBalance,toggleSubmitButtonClicked,submitButtonClicked} = useProduce();
+  const { updateProduceList, userCurrentOrder, updateUserOrder, updateTotalBalance, totalBalance, clearOrder, updateCurrentBalance, toggleSubmitButtonClicked, submitButtonClicked, setInventoryUpdated } = useProduce();
   const router = useRouter();
   // const { order } = router.query;
   const [produceItems, setProduceItems] = useState([])
@@ -283,33 +283,26 @@ const ProduceList = () => {
         // return;
       }
       
+      // Server recalculates prices, stock, and inventory from the database
       const items = userCurrentOrder
-        .filter((item) => item.stock !== false)
+        .filter((item) => item.id != null)
         .map((item) => ({
-          name: item.name,
+          produce_item_id: item.id,
           quantity: Number(item.Qty),
-          case_cost: item.case_cost,
-          promo: item.promo_price || 0,
-          total:
-            item.promo_price > 0
-              ? item.promo_price * Number(item.Qty)
-              : item.case_cost * Number(item.Qty),
         }));
 
       if (!items.length) {
-        setError('No in-stock items to submit');
+        setError('No items to submit');
         setSubmitButton(true);
         return;
       }
 
-      // Create a temporary solution - using a NextJS API route
-      // Create a new file: pages/api/proxy-order.js that will forward your request
       const response = await axios.post('/api/proxy-order', { items });
 
       setError(null);
       toggleSubmitButton();
-      
-      // Handle successful order
+      setInventoryUpdated(true);
+
       setTimeout(() => {
         clearOrder();
         toggleSubmitButton();
@@ -318,7 +311,13 @@ const ProduceList = () => {
       
     } catch (error) {
       console.error('Order submission error:', error);
-      setError(error.response?.data?.message || 'Failed to send order');
+      const apiMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error?.message ||
+        (typeof error.response?.data?.error === 'string'
+          ? error.response.data.error
+          : null);
+      setError(apiMessage || 'Failed to send order');
       setSubmitButton(true);
     }
   };

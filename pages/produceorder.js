@@ -67,9 +67,9 @@ export default function produceorder() {
   console.log("useProduce is ", useProduce())
   
     const { 
-      produceListItems, 
+      produceListItems,
       updateProduceList,
-      userCurrentOrder = [], // Add default value
+      userCurrentOrder = [],
       updateUserOrder, 
       updateTotalBalance,
       totalBalance,
@@ -82,6 +82,7 @@ export default function produceorder() {
       toggleSubmitButtonClicked, 
       submitButtonClicked,
       inventoryUpdated,
+      refreshProduceCatalog,
       isAdmin,
       setAuthMessage,
     } = useProduce();
@@ -115,6 +116,13 @@ export default function produceorder() {
   
       checkAuthStatus();
     }, [router.pathname, setAuthMessage]);
+
+    // Fresh catalog when opening the order page (picks up inventory edits)
+    useEffect(() => {
+      if (loggedIn && router.pathname === '/produceorder') {
+        refreshProduceCatalog();
+      }
+    }, [loggedIn, router.pathname, refreshProduceCatalog]);
 
     const getAuthStatus = async () => {
       let result;
@@ -367,16 +375,22 @@ export default function produceorder() {
     const increaseProduceItem=(e,Quantity, id, case_cost, promoPrice,stock,index)=>{
       let produceItemLocation;
       let currentQty;
-      
-      console.log("value is ", value)
 
-      
-      //TODO:First find the produce item by using the id
       produceItemLocation=findProduceItem(id)
-      //TODO:Get the current value of the Quantity
-      currentQty=userCurrentOrder[produceItemLocation].Qty;
-      console.log("For id", id, ", and it's Quantity is ", currentQty)
-      //TODO:Increase the value of Quantity
+      if (produceItemLocation === undefined) return;
+
+      const cartLine = userCurrentOrder[produceItemLocation];
+      const catalogItem = produceListItems.find((p) => p.id === id);
+      const available = getAvailableQuantity(catalogItem ?? cartLine);
+      currentQty = userCurrentOrder[produceItemLocation].Qty;
+
+      if (currentQty + 1 > available) {
+        showCheckoutBlocked(
+          `Only ${available} case${available === 1 ? '' : 's'} of ${cartLine.name} available.`,
+        );
+        return;
+      }
+
       currentQty=currentQty+1
       // console.log(currentQty)
       console.log("produceItemLocation is ", produceItemLocation)
@@ -545,9 +559,109 @@ export default function produceorder() {
 
   }
 
+  /** Numeric cases available (DB quantity, else parse inventory display string). */
+  const getAvailableQuantity = (item) => {
+    if (item?.quantity != null && item.quantity !== '') {
+      const n = Number(item.quantity);
+      if (Number.isFinite(n)) return n;
+    }
+    const parsed = parseInt(String(item?.inventory ?? '').replace(/[^\d]/g, ''), 10);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
+  const formatCasesAvailable = (item) => {
+    const n = getAvailableQuantity(item);
+    return `${n} case${n === 1 ? '' : 's'} available`;
+  };
+
+  // Keep dropdown selection and cart lines in sync when the catalog refetches
+  useEffect(() => {
+    if (!produceListItems.length) return;
+
+    if (value?.id) {
+      const fresh = produceListItems.find((p) => p.id === value.id);
+      if (
+        fresh &&
+        (fresh.quantity !== value.quantity ||
+          fresh.stock !== value.stock ||
+          fresh.inventory !== value.inventory)
+      ) {
+        setValue(fresh);
+      }
+    }
+
+    if (!userCurrentOrder.length) return;
+
+    let changed = false;
+    const synced = userCurrentOrder.map((cartItem) => {
+      const fresh = produceListItems.find((p) => p.id === cartItem.id);
+      if (!fresh) return cartItem;
+      if (
+        cartItem.quantity === fresh.quantity &&
+        cartItem.inventory === fresh.inventory &&
+        cartItem.stock === fresh.stock &&
+        cartItem.case_cost === fresh.case_cost &&
+        cartItem.promo_price === fresh.promo_price
+      ) {
+        return cartItem;
+      }
+      changed = true;
+      return {
+        ...cartItem,
+        quantity: fresh.quantity,
+        inventory: fresh.inventory,
+        stock: fresh.stock,
+        case_cost: fresh.case_cost,
+        promo_price: fresh.promo_price,
+      };
+    });
+    if (changed) updateUserOrder(synced);
+  }, [produceListItems, value, userCurrentOrder, updateUserOrder]);
+
+  const getInventoryCheckoutErrors = () => {
+    const errors = [];
+    for (const cartItem of userCurrentOrder) {
+      const catalogItem = produceListItems.find((p) => p.id === cartItem.id);
+      const source = catalogItem ?? cartItem;
+      const available = getAvailableQuantity(source);
+      const requested = Number(cartItem.Qty);
+
+      if (!source.stock) {
+        errors.push(`${cartItem.name} is out of stock. Remove it to continue.`);
+      } else if (requested > available) {
+        errors.push(
+          `Only ${available} case${available === 1 ? '' : 's'} of ${cartItem.name} available — you're ordering ${requested}.`,
+        );
+      }
+    }
+    return errors;
+  };
+
+  const showCheckoutBlocked = (message) => {
+    setNotification({ open: true, message, severity: 'warning' });
+  };
+
+  const handleCheckoutClick = () => {
+    if (!userCurrentOrder.length) {
+      showCheckoutBlocked('Add at least one item before checkout.');
+      return;
+    }
+    const inventoryErrors = getInventoryCheckoutErrors();
+    if (inventoryErrors.length > 0) {
+      showCheckoutBlocked(inventoryErrors[0]);
+      return;
+    }
+    setOpenConfirmDialog(true);
+  };
+
   const handleConfirmOrder = () => {
     if (!userCurrentOrder.length) {
-      setNotification({ open: true, message: 'Add at least one item before checkout.', severity: 'warning' });
+      showCheckoutBlocked('Add at least one item before checkout.');
+      return;
+    }
+    const inventoryErrors = getInventoryCheckoutErrors();
+    if (inventoryErrors.length > 0) {
+      showCheckoutBlocked(inventoryErrors[0]);
       return;
     }
     router.push('/produce-list');
@@ -704,7 +818,10 @@ export default function produceorder() {
               options={uniqueProduceItems}
               getOptionDisabled={(option) => !option.stock}
               getOptionLabel={(option) => option.name || ''}
-              renderOption={(props, option) => (
+              onOpen={() => refreshProduceCatalog()}
+              renderOption={(props, option) => {
+                const available = getAvailableQuantity(option);
+                return (
                 <li 
                   {...props} 
                   className="flex items-center py-2 hover:bg-emerald-50 transition-colors duration-150"
@@ -721,7 +838,9 @@ export default function produceorder() {
                   <div className="flex-1">
                     <div className="font-medium capitalize">{option.name}</div>
                     <div className="text-xs text-gray-500">
-                      Inventory: <span className={option.inventory < 20 ? "text-amber-600 font-medium" : ""}>{option.inventory}</span>
+                      <span className={available > 0 && available < 20 ? 'text-amber-600 font-medium' : ''}>
+                        {formatCasesAvailable(option)}
+                      </span>
                       {option.promo_price > 0 && (
                         <span className="ml-2 text-green-600 font-medium">
                           Promo: ${option.promo_price}
@@ -733,7 +852,8 @@ export default function produceorder() {
                     <div className="text-xs text-red-600 font-medium px-4"><span>Out of Stock</span></div>
                   )}
                 </li>
-              )}
+                );
+              }}
               renderInput={(params) => (
                 <TextField 
                   {...params}
@@ -782,6 +902,8 @@ export default function produceorder() {
             {userCurrentOrder.map((item, index) => {
               const unitPrice = getUnitPrice(item);
               const lineTotal = getLineTotal(item);
+              const catalogItem = produceListItems.find((p) => p.id === item.id);
+              const available = getAvailableQuantity(catalogItem ?? item);
 
               return (
               <div
@@ -808,6 +930,13 @@ export default function produceorder() {
                       {!item.stock && (
                         <p className="text-xs text-red-600 font-medium mt-1">
                           Out of stock — remove or wait for restock
+                        </p>
+                      )}
+                      {item.stock && (
+                        <p className={`text-xs mt-0.5 ${item.Qty > available ? 'text-amber-700 font-medium' : 'text-gray-500'}`}>
+                          {formatCasesAvailable(catalogItem ?? item)}
+                          {item.Qty > available &&
+                            ` — you're ordering ${item.Qty}`}
                         </p>
                       )}
                       <p className="text-sm text-gray-600 mt-1">
@@ -949,7 +1078,7 @@ export default function produceorder() {
                 <Button
                   variant="contained"
                   color="primary"
-                  onClick={() => setOpenConfirmDialog(true)}
+                  onClick={handleCheckoutClick}
                   disabled={isLoading}
                 >
                   {isLoading ? (

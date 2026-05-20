@@ -31,29 +31,39 @@ export default function useInventoryEditor({
 //     setInventoryUpdated(true);
 //   };
 
-const handleEdit = (item) => {
+  /** Desktop table: inline row edit only (no drawer). */
+  const handleInlineEdit = (item) => {
     if (!item) return;
-    console.log('Editing item:', item.id);
-    setOpen(true);
-    setEditingItem(item);
+    setOpen(false);
+    setEditingItem(null);
     setEditingId(item.id);
     setEditCaseCost(String(item.case_cost ?? ''));
     setEditPromoPrice(String(item.promo_price ?? ''));
     setEditQuantity(String(item.quantity ?? ''));
-    setInventoryUpdated(true);
-    console.log("testing ....")
   };
-  
+
+  /** Mobile cards: open bottom drawer form. */
+  const handleDrawerEdit = (item) => {
+    if (!item) return;
+    setEditingId(item.id);
+    setEditingItem(item);
+    setEditCaseCost(String(item.case_cost ?? ''));
+    setEditPromoPrice(String(item.promo_price ?? ''));
+    setEditQuantity(String(item.quantity ?? ''));
+    setOpen(true);
+  };
+
   const resetEditForm = () => {
     setEditingId(null);
     setEditCaseCost('');
     setEditPromoPrice('');
     setEditQuantity('');
+    setOpen(false);
+    setEditingItem(null);
   };
 
   const handleCancelEdit = () => {
     resetEditForm();
-    setInventoryUpdated(false);
   };
 
   const handleSaveItem = async (item) => {
@@ -63,17 +73,31 @@ const handleEdit = (item) => {
     if (Number.isNaN(cost) || Number.isNaN(promo) || Number.isNaN(quantity)) {
       return;
     }
+    const inStock = quantity > 0;
     setProduceItems((prev) =>
       prev.map((i) =>
-        i.id === item.id ? { ...i, case_cost: cost, promo_price: promo, quantity: quantity } : i
+        i.id === item.id
+          ? {
+              ...i,
+              case_cost: cost,
+              promo_price: promo,
+              quantity,
+              inventory: String(quantity),
+              stock: inStock,
+            }
+          : i
       )
     );
     resetEditForm();
+    setOpen(false);
+    setEditingItem(null);
 
     const response = await produceAPI.updateItemById(item.id, {
       case_cost: cost,
       promo_price: promo,
-      quantity: quantity
+      quantity,
+      stock: inStock,
+      inventory: String(quantity),
     });
     console.log('Updated item:', response.data);
     showInventoryNotification('Inventory item updated successfully.');
@@ -119,7 +143,8 @@ const handleEdit = (item) => {
     setEditPromoPrice,
     editQuantity,
     setEditQuantity,
-    handleEdit,
+    handleInlineEdit,
+    handleDrawerEdit,
     handleCancelEdit,
     handleSaveItem,
     open,
