@@ -5,8 +5,6 @@ import { useProduce } from '../src/components/context/ProduceContext';
 import { useSwitch } from '@nextui-org/react';
 import { Stack, Autocomplete, TextField, Button, MenuItem, Select, accordionSummaryClasses } from "@mui/material"
 import Snackbar1 from '@mui/material/Snackbar';
-import queryString from 'query-string';
-import { Questrial } from 'next/font/google';
 import QuantitySelector from './QuantitySelector';
 import SendEmail from './SendEmail';
 import axios from 'axios';
@@ -32,38 +30,13 @@ const ProduceList = () => {
   const [error, setError]=useState(null)
   const [customQty, setCustomQty]=useState(false)
 
-  console.log("userCurrentOrder is ", userCurrentOrder)
-  console.log("quantity is ", quantity)
-
-  useEffect(()=>{
-    const parsed=queryString.parse(window.location.search)
-
-    const orderParam=parsed.order
-    if (orderParam) {
-      // setProduceItems(JSON.parse(decodeURIComponent(order)))
-      try {
-        const decodedOrder=decodeURIComponent(orderParam)
-        const parsedOrder=JSON.parse(decodedOrder)
-        setProduceItems(parsedOrder)
-      } catch (error) {
-        console.error("Failed to decode or parse order:", error)
-      }
+  // Cart lives in ProduceContext — no URL query handoff
+  useEffect(() => {
+    if (!router.isReady) return;
+    if (userCurrentOrder.length === 0) {
+      router.replace('/produceorder');
     }
-
-    const prdcItmLst=parsed.prdcItmLst
-    if(prdcItmLst){
-      try {
-        const decodedOrder=decodeURIComponent(prdcItmLst)
-        const parsedProduceL=JSON.parse(decodedOrder)
-        setListItems(parsedProduceL)
-      } catch (error) {
-                console.error("Failed to decode or parse produceList:", error)
-      }
-    }
-
-
-  
-  }, [])
+  }, [router.isReady, userCurrentOrder.length, router]);
 
   const toggleCustomQty=()=>{
     setCustomQty(!customQty)
@@ -270,11 +243,9 @@ const ProduceList = () => {
   }
 
   const handleDelete = (index) => {
-    console.log("index is ", index)
-    let tempID=produceItems[index].id
-
-    setProduceItems(prevItems=>prevItems.filter(item=>item.id !== tempID))
-    // updateUs(prevItems=>prevItems.filter(item=>item.id !== tempID))
+    const tempID = userCurrentOrder[index]?.id;
+    if (tempID == null) return;
+    updateUserOrder(userCurrentOrder.filter((item) => item.id !== tempID));
   };
 
   const handleClose3 = (e, reason) => {
@@ -352,23 +323,30 @@ const ProduceList = () => {
     }
   };
 
-  const mainPage=(e)=>{
+  const mainPage = () => {
     router.push('/produceorder');
+  };
+
+  if (router.isReady && userCurrentOrder.length === 0) {
+    return null;
   }
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar title="Confirm Your Order" />
-      
-      <div className="lg:w-4/12 container mx-auto lg:px-4 lg:py-4 mt-14">
-        {/* Order Summary - Moved to top for better visibility */}
-        <div className="mb-4 bg-white rounded-lg shadow-sm p-4">
+    <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-50">
+      <Navbar title="Review order" />
+
+      <main id="main-content" className="max-w-3xl container mx-auto px-4 py-4 mt-4" role="main">
+        <p className="text-xs text-gray-500 mb-3">
+          Adjust quantities below, then submit. Out-of-stock lines cannot be submitted.
+        </p>
+        <div className="mb-4 bg-white rounded-lg shadow-sm p-4 border border-gray-200">
           <div className="grid grid-cols-2 gap-4">
-            <div className="flex items-center justify-between p-3 bg-blue-50 rounded">
-              <span className="text-gray-600">Total Quantity:</span>
+            <div className="flex items-center justify-between p-3 bg-emerald-50 rounded">
+              <span className="text-gray-600">Total quantity</span>
               <span className="text-lg font-semibold">{getTotalQuantity()}</span>
             </div>
             <div className="flex items-center justify-between p-3 bg-green-50 rounded">
-              <span className="text-gray-600">Total Amount:</span>
+              <span className="text-gray-600">Total amount</span>
               <span className="text-lg font-semibold">${getTotal()}</span>
             </div>
           </div>
@@ -397,8 +375,13 @@ const ProduceList = () => {
                       </div>
                     </div>
                     <div className="text-xs text-gray-500">
-                      Case Size: {item.case_size}
+                      Case size: {item.case_size}
                     </div>
+                    {item.stock === false && (
+                      <p className="text-xs text-amber-700 mt-1">
+                        Out of stock — remove or change quantity before submitting.
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -411,7 +394,7 @@ const ProduceList = () => {
                         produceItems={userCurrentOrder}
                         outStock={item.stock}
                         toggleCustomQty={toggleCustomQty}
-                        className="w-28"
+                        productName={item.name}
                       />
                     ) : (
                       <div className="flex items-center gap-1">
@@ -445,23 +428,14 @@ const ProduceList = () => {
 
         {/* Action Buttons */}
         <div className="mt-4 flex justify-end gap-3">
-          <Button
-            variant="outlined"
-            onClick={mainPage}
-            className="px-4 py-1.5 text-sm text-blue-600 border-blue-600 hover:bg-blue-50"
-          >
-            Modify Order
+          <Button variant="outlined" color="primary" onClick={mainPage}>
+            Back to cart
           </Button>
-          <Button
-            variant="contained"
-            onClick={submitOrder}
-            disabled={submitButton}
-            className="px-4 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            Submit Order
+          <Button variant="contained" color="primary" onClick={submitOrder} disabled={submitButton}>
+            Submit order
           </Button>
         </div>
-      </div>
+      </main>
 
       {/* Success Snackbar */}
       <Snackbar1

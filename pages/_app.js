@@ -5,17 +5,39 @@ import { ProduceProvider } from '../src/components/context/ProduceContext'
 // Import Tailwind CSS after Material UI to give it higher specificity
 import '../src/styles/globals.css'
 
-// Create a theme instance
+// Align MUI with app emerald brand (navbar, checkout, buttons)
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#556cd6',
+      main: '#166534',
+      dark: '#14532d',
+      light: '#22c55e',
+      contrastText: '#ffffff',
     },
     secondary: {
-      main: '#19857b',
+      main: '#059669',
+      contrastText: '#ffffff',
+    },
+    error: {
+      main: '#dc2626',
     },
     background: {
-      default: '#ffffff',
+      default: '#f0fdf4',
+    },
+  },
+  typography: {
+    fontFamily:
+      'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        containedPrimary: {
+          '&:hover': {
+            backgroundColor: '#14532d',
+          },
+        },
+      },
     },
   },
 });

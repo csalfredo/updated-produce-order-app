@@ -1,6 +1,6 @@
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { authService } from './auth';
 import { useProduce } from './context/ProduceContext';
 import {
@@ -12,50 +12,36 @@ import {
   Menu,
   MenuItem,
   Box,
-  Fade,
   Grow,
-  Paper
+  Chip,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
   Logout as LogoutIcon,
   Inventory as InventoryIcon,
   History as HistoryIcon,
-  ShoppingCart as ShoppingCartIcon
+  ShoppingCart as ShoppingCartIcon,
 } from '@mui/icons-material';
 
-/** System sans-serif stack: readable in app bars across OS/browser */
 const APP_BAR_FONT =
   'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif';
 
-const Navbar = ({title, main }) => {
+const navButtonSx = {
+  color: 'inherit',
+  textTransform: 'none',
+  fontWeight: 500,
+  fontFamily: APP_BAR_FONT,
+};
+
+const Navbar = ({ title }) => {
   const router = useRouter();
   const { inventoryUpdated, isLoggedIn, isAdmin } = useProduce();
-  // const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
-
-  // useEffect(() => {
-  //   checkAuthStatus();
-  // }, []);
-
-  // const checkAuthStatus = async () => {
-  //   try {
-  //     const result = await authService.checkAuth();
-  //     console.log('Authentication check result:', result);
-  //     setIsLoggedIn(!!result);
-  //   } catch (error) {
-  //     console.error('Auth check failed:', error);
-  //     setIsLoggedIn(false);
-  //   }
-  // };
-  
-  console.log("isAdmin is ", isAdmin)
 
   const handleLogout = async () => {
     try {
       await authService.logout();
-      setIsLoggedIn(false);
       handleClose();
       router.push('/login');
     } catch (error) {
@@ -71,20 +57,12 @@ const Navbar = ({title, main }) => {
     setAnchorEl(null);
   };
 
-  const handleInventoryList = () => {
+  const goTo = (path) => {
     handleClose();
-    router.push('/inventory_list');
+    router.push(path);
   };
 
-  const handleHistoryOrder = () => {
-    handleClose();
-    router.push('/current_order_admin');
-  };
-
-  const handleOrder = () => {
-    handleClose();
-    router.push('/produceorder');
-  };
+  const inventoryLabel = inventoryUpdated ? 'Inventory (updated)' : 'Inventory';
 
   return (
     <AppBar
@@ -100,52 +78,82 @@ const Navbar = ({title, main }) => {
     >
       <Toolbar>
         <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-          <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <Link href={isLoggedIn ? '/produceorder' : '/login'} style={{ textDecoration: 'none', color: 'inherit' }}>
             {title || 'Produce Order'}
           </Link>
         </Typography>
-        
-        {/* Desktop menu */}
-        <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
-          {isLoggedIn && (
-            <Button 
-              color="inherit" 
-              component={Link} 
+
+        {isLoggedIn && (
+          <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 0.5 }}>
+            <Button
+              color="inherit"
+              component={Link}
               href="/produceorder"
-              sx={{ mr: 2 }}
+              sx={navButtonSx}
+              startIcon={<ShoppingCartIcon sx={{ fontSize: 18 }} />}
             >
-              Order
+              Place order
             </Button>
-          )}
-        </Box>
-{console.log("inventoryUpdated is ", inventoryUpdated)}
-        {/* Hamburger menu button */}
+            {isAdmin && (
+              <>
+                <Button
+                  color="inherit"
+                  component={Link}
+                  href="/inventory_list"
+                  sx={navButtonSx}
+                  startIcon={<InventoryIcon sx={{ fontSize: 18 }} />}
+                >
+                  {inventoryLabel}
+                </Button>
+                {inventoryUpdated && (
+                  <Chip
+                    label="Updated"
+                    size="small"
+                    sx={{
+                      height: 22,
+                      fontSize: '0.7rem',
+                      bgcolor: '#fbbf24',
+                      color: '#14532d',
+                      fontWeight: 700,
+                    }}
+                  />
+                )}
+                <Button
+                  color="inherit"
+                  component={Link}
+                  href="/current_order_admin"
+                  sx={navButtonSx}
+                  startIcon={<HistoryIcon sx={{ fontSize: 18 }} />}
+                >
+                  Order history
+                </Button>
+              </>
+            )}
+            <Button color="inherit" onClick={handleLogout} sx={navButtonSx} startIcon={<LogoutIcon sx={{ fontSize: 18 }} />}>
+              Logout
+            </Button>
+          </Box>
+        )}
+
         <IconButton
           size="large"
           edge="end"
           color="inherit"
-          aria-label="menu"
+          aria-label="Open menu"
           aria-controls={open ? 'menu-appbar' : undefined}
           aria-haspopup="true"
           onClick={handleMenu}
-          sx={{ ml: 2 }}
+          sx={{ ml: 1, display: { xs: 'inline-flex', md: isLoggedIn ? 'none' : 'inline-flex' } }}
         >
           <MenuIcon />
         </IconButton>
 
-        {/* Dropdown menu */}
         <Menu
           id="menu-appbar"
           anchorEl={anchorEl}
-          anchorOrigin={{
-            vertical: 'bottom',
-            horizontal: 'right',
-          }}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
           keepMounted
-          transformOrigin={{
-            vertical: 'top',
-            horizontal: 'right',
-          }}
+          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
           open={open}
           onClose={handleClose}
           TransitionComponent={Grow}
@@ -153,59 +161,48 @@ const Navbar = ({title, main }) => {
           PaperProps={{
             elevation: 3,
             sx: {
-              minWidth: 200,
+              minWidth: 220,
               mt: 1,
               fontFamily: APP_BAR_FONT,
-              '& .MuiMenuItem-root': {
-                py: 1.5,
-                px: 2,
-              }
-            }
+              '& .MuiMenuItem-root': { py: 1.5, px: 2 },
+            },
           }}
         >
-          {isLoggedIn ? [
+          {isLoggedIn ? (
+            [
+              <MenuItem key="place-order" onClick={() => goTo('/produceorder')}>
+                <ShoppingCartIcon sx={{ mr: 2, fontSize: 20 }} />
+                Place order
+              </MenuItem>,
+              isAdmin && (
+                <MenuItem key="inventory-list" onClick={() => goTo('/inventory_list')}>
+                  <InventoryIcon sx={{ mr: 2, fontSize: 20 }} />
+                  {inventoryLabel}
+                  {inventoryUpdated && (
+                    <Chip label="Updated" size="small" sx={{ ml: 1, height: 20, fontSize: '0.65rem' }} color="warning" />
+                  )}
+                </MenuItem>
+              ),
+              isAdmin && (
+                <MenuItem key="order-history" onClick={() => goTo('/current_order_admin')}>
+                  <HistoryIcon sx={{ mr: 2, fontSize: 20 }} />
+                  Order history
+                </MenuItem>
+              ),
               <MenuItem key="logout" onClick={handleLogout}>
                 <LogoutIcon sx={{ mr: 2, fontSize: 20 }} />
                 Logout
               </MenuItem>,
-              isAdmin && (
-                <MenuItem
-                  key="inventory-list"
-                  onClick={handleInventoryList}
-                  title={
-                    inventoryUpdated
-                      ? 'Inventory list has been updated (edits or unsaved changes)'
-                      : undefined
-                  }
-                >
-                  <InventoryIcon sx={{ mr: 2, fontSize: 20 }} />
-                  Inventory List
-                  {inventoryUpdated ? ' •' : ''}
-                </MenuItem>
-              ),
-              isAdmin && (
-                <MenuItem key="order-history" onClick={handleHistoryOrder}>
-                  <HistoryIcon sx={{ mr: 2, fontSize: 20 }} />
-                  Order History
-                </MenuItem>
-              ),
-              <MenuItem key="current-order" onClick={handleOrder}>
-                <ShoppingCartIcon sx={{ mr: 2, fontSize: 20 }} />
-                Current Order
-              </MenuItem>
-            ] : (
-            <MenuItem 
-              onClick={handleClose}
-              component={Link}
-              href="/login"
-            >
-              Login
+            ]
+          ) : (
+            <MenuItem onClick={handleClose} component={Link} href="/login">
+              Sign in
             </MenuItem>
           )}
         </Menu>
       </Toolbar>
     </AppBar>
   );
-}
+};
 
-export default Navbar; 
+export default Navbar;

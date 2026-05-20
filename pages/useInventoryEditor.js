@@ -80,14 +80,36 @@ const handleEdit = (item) => {
     setInventoryUpdated(true);
   };
 
-  const handleDeleteItem = async (item) => {
-    const response = await produceAPI.deleteItemById(item.id);
-    console.log('Deleted item:', response.data);
-    setProduceItems((prev) => prev.filter((i) => i.id !== item.id));
-    showInventoryNotification('Inventory item deleted successfully.');
-    setInventoryUpdated(true);
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const requestDeleteItem = (item) => {
+    if (item) setItemToDelete(item);
   };
 
+  const cancelDeleteItem = () => {
+    if (!deleteLoading) setItemToDelete(null);
+  };
+
+  const confirmDeleteItem = async () => {
+    if (!itemToDelete) return;
+    setDeleteLoading(true);
+    try {
+      const response = await produceAPI.deleteItemById(itemToDelete.id);
+      console.log('Deleted item:', response.data);
+      setProduceItems((prev) => prev.filter((i) => i.id !== itemToDelete.id));
+      showInventoryNotification('Inventory item deleted successfully.');
+      setInventoryUpdated(true);
+      setItemToDelete(null);
+    } catch (err) {
+      showInventoryNotification(
+        err.message || 'Failed to delete item.',
+        'error',
+      );
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
   return {
     editingId,
@@ -104,6 +126,10 @@ const handleEdit = (item) => {
     setOpen,
     editingItem,
     setEditingItem,
-    handleDeleteItem,
+    requestDeleteItem,
+    itemToDelete,
+    cancelDeleteItem,
+    confirmDeleteItem,
+    deleteLoading,
   };
 }

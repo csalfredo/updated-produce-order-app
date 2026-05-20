@@ -1,55 +1,50 @@
-import React, { useState } from 'react';
-import { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import Link from 'next/link';
-import { TextField, Button, Box, Container, Typography, Alert, Grid } from '@mui/material';
-import { Password } from '@mui/icons-material';
+import { TextField, Button, Box, Container, Typography, Alert } from '@mui/material';
 import { authService } from '../src/components/auth';
-// import Navbar from '../components/Navbar';
+import { useProduce } from '../src/components/context/ProduceContext';
 
 export default function Login() {
   const router = useRouter();
+  const { authMessage, setAuthMessage } = useProduce();
   const [formData, setFormData] = useState({
     email: '',
-    password: ''
+    password: '',
   });
 
   const [errors, setErrors] = useState({
     email: '',
-    password: ''
+    password: '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [loggedIn, setLoggedIn] = useState(false);
+
+  useEffect(() => {
+    if (authMessage) {
+      setError(authMessage);
+      setAuthMessage('');
+    }
+  }, [authMessage, setAuthMessage]);
 
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
         const isAuthenticated = await authService.checkAuth();
-        console.log("isAuthenticated=", isAuthenticated);
         if (isAuthenticated && typeof isAuthenticated === 'object') {
-          // If user is already logged in, set loggedIn to true and redirect
-          setLoggedIn(true);
           router.push('/produceorder');
-        } else {
-          console.log("Not authenticated");
-          setLoggedIn(false);
         }
-      } catch (error) {
-        console.error('Auth check failed:', error);
-        setLoggedIn(false);
+      } catch (err) {
+        console.error('Auth check failed:', err);
       }
     };
 
     checkAuthStatus();
-  }, []);
-
+  }, [router]);
 
   const validateForm = () => {
     let isValid = true;
     const newErrors = { email: '', password: '' };
 
-    // Email validation
     if (!formData.email) {
       newErrors.email = 'Email is required';
       isValid = false;
@@ -58,7 +53,6 @@ export default function Login() {
       isValid = false;
     }
 
-    // Password validation
     if (!formData.password) {
       newErrors.password = 'Password is required';
       isValid = false;
@@ -73,44 +67,15 @@ export default function Login() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
-    // Clear field-specific error when user starts typing
     if (errors[name]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [name]: ''
+        [name]: '',
       }));
-    }
-  };
-
-  const handleLogin = async (credentials) => {
-    console.log("1. Starting login attempt...");
-    try {
-        console.log("2. About to call authService.login");
-        const response = await authService.login(credentials);
-        console.log("3. Login response:", response);
-        console.log("4. Setting loggedIn to true");
-        setLoggedIn(true);
-        console.log("5. About to redirect");
-        window.location.href = '/produceorder';
-        console.log("6. After redirect command");
-    } catch (error) {
-        console.error('Login failed:', error);
-        throw new Error(error.response?.data?.message || error.message || 'Authentication failed.');
-    }
-  };
-
-  const handleLoginSuccess = () => {
-    const returnPath = localStorage.getItem('returnPath');
-    localStorage.removeItem('returnPath'); // Clean up
-    
-    if (returnPath) {
-      router.push(returnPath);
-    } else {
-      router.push('/produceorder'); // Default redirect
     }
   };
 
@@ -120,61 +85,62 @@ export default function Login() {
     setLoading(true);
 
     if (!validateForm()) {
-        setLoading(false);
-        return;
+      setLoading(false);
+      return;
     }
 
     try {
-        console.log('Attempting login...');
-        await authService.login(formData);
-        console.log('Login successful');
-        // Most basic redirect possible
-        document.location = '/produceorder';
-        
+      await authService.login(formData);
+      router.push('/produceorder');
     } catch (err) {
-        console.error('Login error:', err);
-        setError(err.message || 'Login failed. Please try again.');
+      console.error('Login error:', err);
+      setError(err.message || 'Login failed. Please try again.');
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <Container 
-      component="main" 
+    <Container
+      component="main"
       maxWidth="xs"
       sx={{
         minHeight: '100vh',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        bgcolor: '#f0fdf4',
       }}
-      >
-      {loggedIn ? console.log("logged in=",loggedIn) : console.log("not logged in=",loggedIn)}
-
-      {/* <Navbar /> */}
+    >
       <Box
-          sx={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
-      <div className='border border-gray-300 rounded-md p-8'>     
-        <Box sx={{
+        sx={{
+          flex: 1,
           display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center'
-        }}>
-          <Typography component="h1" variant="h5">
-            Login
-          </Typography>
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Box
+          className="border border-gray-200 rounded-lg p-8 bg-white shadow-sm w-full"
+          sx={{ maxWidth: 400 }}
+        >
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
+            <Typography
+              component="h1"
+              variant="h5"
+              sx={{ color: '#166534', fontWeight: 700 }}
+            >
+              Produce Order
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              Sign in to place your order
+            </Typography>
+          </Box>
+
           {error && (
-            <Alert severity="error" sx={{ width: '100%', mt: 2 }}>
+            <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
               {error}
             </Alert>
           )}
-        </Box>   
 
           <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
             <TextField
@@ -182,7 +148,7 @@ export default function Login() {
               required
               fullWidth
               id="email"
-              label="Email Address"
+              label="Email address"
               name="email"
               autoComplete="email"
               autoFocus
@@ -209,24 +175,19 @@ export default function Login() {
               type="submit"
               fullWidth
               variant="contained"
+              color="primary"
               sx={{ mt: 3, mb: 2 }}
               disabled={loading}
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? 'Signing in…' : 'Sign in'}
             </Button>
           </Box>
 
-          <Grid container justifyContent="center">
-            <Grid item>
-              <Link href="/register" passHref style={{ textDecoration: 'none' }}>
-                <Typography color="primary" sx={{ cursor: 'pointer' }}>
-                  Don't have an account? Sign Up
-                </Typography>
-              </Link>
-            </Grid>
-          </Grid>
-          </div>
+          <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 1 }}>
+            Need an account? Contact your administrator.
+          </Typography>
         </Box>
+      </Box>
     </Container>
   );
 }

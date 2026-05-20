@@ -5,7 +5,7 @@ import {useProduce} from '../src/components/context/ProduceContext'
 // import { useProduce } from './context/ProduceContext';
 import Responsiveproduceorder from '../src/components/Responsiveproduce'
 // import Responsiveproduceorder from '@/components/Responsiveproduceorder'
-import { Stack, Autocomplete, TextField, Button, Dialog, DialogTitle, DialogContent, DialogActions, Alert, Snackbar } from "@mui/material"
+import { Stack, Autocomplete, TextField, Button, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Alert, Snackbar, Box } from "@mui/material"
 import MuiAlert from '@mui/material/Alert'
 import trashDelete from "../src/components/images/deleteTrash.png"
 import gala_apple from "../src/components/images/gala_apple.png"
@@ -29,8 +29,6 @@ import watermelon from "../src/components/images/watermelon.png"
 import Image from 'next/image';
 import { useState, useEffect } from 'react'
 import { toggle, user } from '@nextui-org/react'
-import queryString from 'query-string';
-import { COOKIE_NAME_PRERENDER_BYPASS } from 'next/dist/server/api-utils';
 import Navbar from '../src/components/Navbar';
 // import { Search } from '@mui/icons-material';
 import SearchIcon from '@mui/icons-material/Search'
@@ -85,6 +83,7 @@ export default function produceorder() {
       submitButtonClicked,
       inventoryUpdated,
       isAdmin,
+      setAuthMessage,
     } = useProduce();
     const router = useRouter();
     const [loggedIn, setLoggedIn] = useState(false);
@@ -99,8 +98,8 @@ export default function produceorder() {
             setLoggedIn(true); // Set to boolean true when we have a valid user object
           } else {
             setLoggedIn(false);
-            // Only redirect if we're not already on the login page
             if (router.pathname !== '/login') {
+              setAuthMessage('Your session has expired. Please sign in again.');
               router.push('/login');
             }
           }
@@ -108,13 +107,14 @@ export default function produceorder() {
           console.error('Auth check failed:', error);
           setLoggedIn(false);
           if (router.pathname !== '/login') {
+            setAuthMessage('Your session has expired. Please sign in again.');
             router.push('/login');
           }
         }
       };
   
       checkAuthStatus();
-    }, [router.pathname]); // Add router.pathname as dependency
+    }, [router.pathname, setAuthMessage]);
 
     const getAuthStatus = async () => {
       let result;
@@ -212,14 +212,19 @@ export default function produceorder() {
 
     useEffect(() => {
       const handleKeyPress = (e) => {
-        // Press '/' to focus search
-        if (e.key === '/' && e.target.tagName !== 'INPUT') {
+        if (
+          e.key === '/' &&
+          e.target.tagName !== 'INPUT' &&
+          e.target.tagName !== 'TEXTAREA'
+        ) {
           e.preventDefault();
-          document.querySelector('input[type="text"]').focus();
+          document.getElementById('product-search-input')?.focus();
         }
-        // Press 'Escape' to clear search
         if (e.key === 'Escape') {
           setValue(null);
+          if (document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur();
+          }
         }
       };
 
@@ -275,18 +280,21 @@ export default function produceorder() {
 
       return found;
     }
-    const getCurrentProduceValue = (event) => {
-      // Check if value exists and is a valid selection
+    const getCurrentProduceValue = () => {
       if (!value) {
-        setOpen(true);
+        setNotification({ open: true, message: 'Select a product from the list first.', severity: 'warning' });
         return;
       }
 
-      // Check if item already exists in order
+      if (!value.stock) {
+        setNotification({ open: true, message: 'This item is out of stock and cannot be added to your order.', severity: 'warning' });
+        return;
+      }
+
       const itemExists = userCurrentOrder.some(item => item.id === value.id);
       
       if (itemExists) {
-        setItemExist(true);
+        setNotification({ open: true, message: 'This item is already in your order. Use + / − to change quantity.', severity: 'info' });
         return;
       }
 
@@ -537,29 +545,13 @@ export default function produceorder() {
 
   }
 
-  const handleConfirmOrder=()=>{
-  
-
-    console.log(userCurrentOrder)
-    
-    console.log(parseFloat(totalBalance).toFixed(2))
-
-
-        // Convert the order to a query parameter string
-        // const query = encodeURIComponent(JSON.stringify(userCurrentOrder));
-        const query={
-          order: JSON.stringify(userCurrentOrder),
-          prdcItmLst: JSON.stringify(produceListItems)
-        }
-
-        //TODO:CONVERT THE QUERY OBJECT TO A QUERY STRING
-        const queryStringified=queryString.stringify(query)
-
-        console.log(queryStringified)
-
-
-        router.push(`/produce-list?${queryStringified}`);
-  }
+  const handleConfirmOrder = () => {
+    if (!userCurrentOrder.length) {
+      setNotification({ open: true, message: 'Add at least one item before checkout.', severity: 'warning' });
+      return;
+    }
+    router.push('/produce-list');
+  };
 
   const toggleOpen=()=>{
     setOpen(!open)
@@ -584,13 +576,18 @@ export default function produceorder() {
   console.log('Current total balance:', totalBalance);
   console.log('Current order:', userCurrentOrder);
 
+  const getUnitPrice = (item) =>
+    item.promo_price > 0 ? item.promo_price : item.case_cost;
+
+  const getLineTotal = (item) => {
+    if (!item.stock) return 0;
+    return getUnitPrice(item) * Number(item.Qty);
+  };
+
   const calculateTotal = () => {
     return userCurrentOrder.reduce((sum, item) => {
-      // Skip out-of-stock items in total calculation
       if (!item.stock) return sum;
-      
-      const price = item.promo_price > 0 ? item.promo_price : item.case_cost;
-      return sum + (price * item.Qty);
+      return sum + getLineTotal(item);
     }, 0).toFixed(2);
   };
 
@@ -684,24 +681,28 @@ export default function produceorder() {
     console.log("Filtered unique produce items:", uniqueProduceItems);
   }, [uniqueProduceItems]);
 
+  if (!loggedIn) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-50 flex items-center justify-center">
+        <p className="text-gray-600">Checking sign-in…</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-50 w-full">
-            {loggedIn ? console.log("User is logged in:", loggedIn) : console.log("User is not logged in:", loggedIn)}
-            {console.log("getAuthStatus is ", getAuthStatus())}
-            {console.log("isAdmin is ", isAdmin)}
       <header className="w-full bg-white shadow-sm">
-        <Navbar title="PRODUCE ORDER" main="Main" />
+        <Navbar title="Produce Order" />
       </header>
 
-      <main className="container mx-auto pt-16">
-        {console.log("inventoryUpdated is ", inventoryUpdated)}
-        {/* Search Section */}
+      <main id="main-content" className="container mx-auto pt-4" role="main">
         <div className="max-w-3xl mx-auto px-4 py-3 w-full">
           <div className="flex gap-2 bg-white p-4 rounded-lg shadow-sm w-full">
             <Autocomplete 
               size="small"
               fullWidth
               options={uniqueProduceItems}
+              getOptionDisabled={(option) => !option.stock}
               getOptionLabel={(option) => option.name || ''}
               renderOption={(props, option) => (
                 <li 
@@ -736,8 +737,13 @@ export default function produceorder() {
               renderInput={(params) => (
                 <TextField 
                   {...params}
-                  label="Search Products"
+                  label="Search products"
                   size="small"
+                  inputProps={{
+                    ...params.inputProps,
+                    id: 'product-search-input',
+                    'aria-describedby': 'product-search-hint',
+                  }}
                 />
               )}
               value={value}
@@ -752,151 +758,185 @@ export default function produceorder() {
             />
             <Button
               variant="contained"
+              color="primary"
               onClick={getCurrentProduceValue}
-              disabled={!value}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+              disabled={!value || (value && !value.stock)}
             >
               Add
             </Button>
           </div>
+          <p id="product-search-hint" className="text-xs text-gray-500 mt-2 px-1">
+            Search by name, then click Add. Press <kbd className="px-1 py-0.5 bg-gray-100 border border-gray-300 rounded text-[10px]">/</kbd> to focus search · <kbd className="px-1 py-0.5 bg-gray-100 border border-gray-300 rounded text-[10px]">Esc</kbd> to clear.
+          </p>
         </div>
 
-        {/* Order List */}
         <div className="max-w-3xl mx-auto px-4">
           <div className="flex flex-col justify-center items-center bg-white rounded-lg shadow-sm divide-y divide-gray-200 border border-gray-200">
-            {userCurrentOrder.map((item, index) => (
-              <div 
-                key={item.id} 
-                className={`w-full p-4 hover:bg-gray-50 transition-colors border-b border-gray-200 last:border-b-0 ${
+            {userCurrentOrder.length === 0 && (
+              <div className="w-full p-10 text-center text-gray-500">
+                <ShoppingCartIcon sx={{ fontSize: 48, color: '#9ca3af', mb: 1 }} />
+                <p className="font-medium text-gray-700">Your order is empty</p>
+                <p className="text-sm mt-1">Search for produce above and click Add to start your order.</p>
+              </div>
+            )}
+            {userCurrentOrder.map((item, index) => {
+              const unitPrice = getUnitPrice(item);
+              const lineTotal = getLineTotal(item);
+
+              return (
+              <div
+                key={item.id}
+                className={`w-full px-3 py-3 sm:px-4 hover:bg-gray-50 transition-colors border-b border-gray-200 last:border-b-0 ${
                   !item.stock ? 'opacity-75 bg-gray-50' : ''
                 }`}
               >
-                <div className="flex justify-center items-center flex-col sm:flex-col md:flex-col lg:flex-row xl:flex-row">
-                  <div className="w-22 h-22 relative flex-shrink-0 overflow-hidden">
-                    <Image
-                      src={item.produce_Image}
-                      alt={item.name}
-                      width={68}
-                      height={68}
-                      style={{ 
-                        objectFit: 'contain',
-                        maxWidth: '100%',
-                        maxHeight: '100%'
-                      }}
-                    />
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+                  <div className="flex gap-3 flex-1 min-w-0">
+                    <div className="relative shrink-0 w-16 h-16 flex items-center justify-center">
+                      <Image
+                        src={item.produce_Image}
+                        alt=""
+                        width={64}
+                        height={64}
+                        style={{ objectFit: 'contain', maxWidth: '100%', maxHeight: '100%' }}
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-base font-medium capitalize text-gray-900 leading-tight">
+                        {item.name}
+                      </h3>
+                      {!item.stock && (
+                        <p className="text-xs text-red-600 font-medium mt-1">
+                          Out of stock — remove or wait for restock
+                        </p>
+                      )}
+                      <p className="text-sm text-gray-600 mt-1">
+                        <span className="text-gray-500">Case cost</span>{' '}
+                        <span className="font-medium text-gray-900">${item.case_cost}</span>
+                        <span className="text-gray-300 mx-1.5">·</span>
+                        <span className="text-gray-500">Size</span>{' '}
+                        <span className="font-medium text-gray-900">{item.case_size}</span>
+                      </p>
+                      {item.promo_price > 0 && (
+                        <p className="text-sm text-green-700 mt-0.5">
+                          <span className="text-green-600">Promo</span>{' '}
+                          <span className="font-semibold">${item.promo_price}</span>
+                          <span className="text-green-600">/case</span>
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  
-                  <div className="w-11/12 py-4">
-                    <div className="w-full flex items-center justify-between flex-col sm:flex-col md:flex-col lg:flex-row xl:flex-row">
-                      <div className="w-full py-3 flex flex-col sm:flex-col md:flex-col lg:flex-row xl:flex-row">
-                        <div className="w-full py-4 flex flex-row">
-                          <div className="px-4">
-                            <label className="text-xs font-semibold uppercase tracking-wide text-gray-600">Item:</label>
-                          </div>
-                          <div>
-                            <h3 className="text-sm font-medium capitalize text-gray-900">{item.name}</h3>
-                          </div>
-                        </div>
-                        <div className="flex justify-start items-center">
-                          {!item.stock && (
-                            <span className="text-xs text-red-600 font-semibold px-4">
-                              Out of Stock
-                            </span>
-                          )}
-                        </div>
-                      </div>
 
-                      <div className="w-full text-sm mt-0.5">
-                        <div>
-                          <div className="py-2 px-4">
-                            <span className="text-xs font-semibold uppercase tracking-wide text-gray-600">Case Cost:</span>
-                            <span className="text-sm font-medium text-gray-900"> ${item.case_cost}</span>
-                          </div>
-                          <div className="px-4 py-2">
-                            <span className="text-xs font-semibold uppercase tracking-wide text-gray-600">Case Size:</span>
-                            <span className="text-sm font-medium text-gray-900"> {item.case_size}</span>
-                          </div>
-                        </div>
-
-                        {item.promo_price > 0 && (
-                          <div className="py-4 px-4">
-                            <span className="text-xs font-semibold uppercase tracking-wide text-green-600">
-                              Promo:
-                            </span>
-                            <span className="text-sm font-medium text-green-700"> ${item.promo_price}</span>
-                          </div>
-                        )}
-                      </div>
+                  <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-3 shrink-0 sm:min-w-[200px]">
+                    <div className="text-left sm:text-right">
+                      <p className="text-base font-semibold text-gray-900 tabular-nums">
+                        ${lineTotal.toFixed(2)}
+                      </p>
+                      <p className="text-xs text-gray-500 tabular-nums">
+                        {item.Qty} × ${Number(unitPrice).toFixed(2)}
+                        {item.promo_price > 0 ? ' promo' : ''}
+                      </p>
                     </div>
 
-                    <div className="flex items-center justify-between">
-                      <div className="w-7/12 flex justify-start items-center">
-                        <div className="w-6/12 flex justify-start items-center px-4 py-4">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-gray-600">Quantity:</p>
-                        </div>
-                      </div>
-
-                      <div className="flex justify-between items-center rounded-full w-[86px] border-2 border-black h-7 px-1">
-                          <Button
-                            onClick={(e) => decreaseProduceItem(e, item.id, item.case_cost, item.promo_price, item.stock, index)}
-                            className="min-w-0"
-                            disabled={!item.stock}
-                            aria-label="Decrease quantity"
-                            sx={{ minWidth: 22, width: 22, height: 24, p: 0 }}
-                          >
-                            <RemoveIcon className="text-black" sx={{ fontSize: 16 }}/>
-                          </Button>
-                          <TextField
-                            size="small"
-                            value={item.Qty}
-                            className="flex items-center text-center"
-                            disabled={!item.stock}
-                            inputProps={{ 'aria-label': 'Quantity' }}
-                            InputProps={{
-                              readOnly: !item.stock
-                            }}
-                            sx={{
-                              width: 30,
-                              '& .MuiInputBase-root': {
-                                height: 20,
-                                fontSize: 12,
-                                borderRadius: '9999px',
-                                backgroundColor: 'white'
-                              },
-                              '& .MuiInputBase-input': {
-                                p: '2px 0',
-                                textAlign: 'center',
-                                color: 'text.primary'
-                              },
-                              '& .MuiOutlinedInput-notchedOutline': {
-                                border: 'none'
-                              }
-                            }}
-                          />
-                          <Button
-                            onClick={(e) => increaseProduceItem(e, item.Qty, item.id, item.case_cost, item.promo_price, item.stock, index)}
-                            className="min-w-0 bg-black"
-                            disabled={!item.stock}
-                            aria-label="Increase quantity"
-                            sx={{ minWidth: 22, width: 22, height: 24, p: 0 }}
-                          >
-                            <AddIcon className="text-black" sx={{ fontSize: 16 }} />
-                          </Button>
-                        </div>
-
-                        {/* <Button
-                          onClick={(e) => removeProduceItem(e, item.id)}
-                          className="min-w-0 p-1"
+                    <div className="flex items-center gap-2">
+                      <Box
+                        role="group"
+                        aria-label={`Quantity for ${item.name}`}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          border: '2px solid',
+                          borderColor: 'grey.800',
+                          borderRadius: '999px',
+                          px: 0.5,
+                          minHeight: 44,
+                        }}
+                      >
+                        <Button
+                          onClick={(e) =>
+                            decreaseProduceItem(
+                              e,
+                              item.id,
+                              item.case_cost,
+                              item.promo_price,
+                              item.stock,
+                              index,
+                            )
+                          }
                           disabled={!item.stock}
-                          aria-label="Remove item from cart"
+                          aria-label="Decrease quantity"
+                          sx={{ minWidth: 40, width: 40, height: 40, p: 0 }}
                         >
-                          <DeleteIcon className="w-4 h-4 text-red-500" />
-                        </Button> */}
-                      </div>
+                          <RemoveIcon sx={{ fontSize: 18 }} />
+                        </Button>
+                        <Box
+                          component="span"
+                          aria-label={`Quantity: ${item.Qty}`}
+                          sx={{
+                            minWidth: 32,
+                            textAlign: 'center',
+                            fontSize: 15,
+                            fontWeight: 700,
+                            color: item.stock ? 'text.primary' : 'text.disabled',
+                          }}
+                        >
+                          {item.Qty}
+                        </Box>
+                        <Button
+                          onClick={(e) =>
+                            increaseProduceItem(
+                              e,
+                              item.Qty,
+                              item.id,
+                              item.case_cost,
+                              item.promo_price,
+                              item.stock,
+                              index,
+                            )
+                          }
+                          disabled={!item.stock}
+                          aria-label="Increase quantity"
+                          sx={{ minWidth: 40, width: 40, height: 40, p: 0 }}
+                        >
+                          <AddIcon sx={{ fontSize: 18 }} />
+                        </Button>
+                      </Box>
+
+                      <Button
+                        onClick={(e) => removeProduceItem(e, item.id)}
+                        aria-label={`Remove ${item.name} from order`}
+                        color="error"
+                        variant="outlined"
+                        size="small"
+                        startIcon={<DeleteIcon />}
+                        sx={{
+                          minHeight: 44,
+                          display: { xs: 'none', sm: 'inline-flex' },
+                          textTransform: 'none',
+                        }}
+                      >
+                        Remove
+                      </Button>
+                      <IconButton
+                        onClick={(e) => removeProduceItem(e, item.id)}
+                        aria-label={`Remove ${item.name} from order`}
+                        color="error"
+                        sx={{
+                          minWidth: 44,
+                          minHeight: 44,
+                          display: { xs: 'inline-flex', sm: 'none' },
+                          border: '1px solid',
+                          borderColor: 'error.light',
+                        }}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </div>
                   </div>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
 
           {/* Order Summary */}
@@ -908,9 +948,9 @@ export default function produceorder() {
                 </div>
                 <Button
                   variant="contained"
+                  color="primary"
                   onClick={() => setOpenConfirmDialog(true)}
                   disabled={isLoading}
-                  className="bg-[#166534] hover:bg-[#14532d] text-white shadow-sm px-6"
                 >
                   {isLoading ? (
                     <span className="flex items-center gap-2">
@@ -984,9 +1024,9 @@ export default function produceorder() {
                 handleConfirmOrder();
               }}
               variant="contained"
-              className="bg-[#166534] hover:bg-[#14532d] text-white px-4 py-2 rounded-md"
+              color="primary"
             >
-              Confirm Order
+              Continue to review
             </Button>
           </DialogActions>
         </Dialog>

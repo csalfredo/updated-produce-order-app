@@ -76,6 +76,8 @@ export const ProduceProvider = ({ children }) => {
     const [isAdmin, setIsAdmin] = useState(false);
     /** Shared across Navbar + inventory page; URL cannot pass setters. */
     const [inventoryUpdated, setInventoryUpdated] = useState(false);
+    /** Shown on login after session expiry or auth redirect. */
+    const [authMessage, setAuthMessage] = useState("");
 
     useEffect(() => {
         checkAuthStatus();
@@ -210,6 +212,8 @@ export const ProduceProvider = ({ children }) => {
                 setInventoryUpdated,
                 isLoggedIn,
                 isAdmin,
+                authMessage,
+                setAuthMessage,
             }}
         >
             {children}

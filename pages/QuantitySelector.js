@@ -1,123 +1,106 @@
 import React, { useState } from 'react';
-import { MenuItem, Select, TextField, Menu, Button} from '@mui/material';
-import {styled } from "@mui/material/styles"
+import { MenuItem, Select, TextField } from '@mui/material';
 import { useProduce } from '../src/components/context/ProduceContext';
 
-const CustomMenu = styled(Menu)(({ theme }) => ({
-  '& .MuiPaper-root': {
-    maxHeight: '75%', // Adjust the value to set the desired height
-    overflowY:'auto',
-  },
-}));
-
-
-const QuantitySelector = ({ onQuantityChange, removeItem,index,id,produceItems,outStock,toggleCustomQty }) => {
+const QuantitySelector = ({
+  onQuantityChange,
+  removeItem,
+  index,
+  id,
+  produceItems,
+  outStock,
+  toggleCustomQty,
+  productName = 'item',
+}) => {
   const [quantity, setQuantity] = useState('');
   const [isCustomQuantity, setIsCustomQuantity] = useState(false);
-  const [customQty, setCustomQty]=useState(false)
-  const { updateProduceList, userCurrentOrder, updateUserOrder, updateTotalBalance, totalBalance } = useProduce();
-
-  console.log("outStock is ", outStock)
-
-  // const toggleCustomQty=()=>{
-  //   setCustomQty(!customQty)
-  // }
 
   const handleQuantityChange = (event) => {
     const value = event.target.value;
 
-    console.log("value is ", value)
-
-    // //TODO:THIS INDICATES IF 
-    // updateQntySelector();
-    
     if (value === '10+') {
-      toggleCustomQty()
+      toggleCustomQty();
       setIsCustomQuantity(true);
       setQuantity('');
-      onQuantityChange('',index,id); // Notify parent of empty selection
-    } else if(value===0){
-        removeItem(index)
-    }
-    else {
+      onQuantityChange('', index, id);
+    } else if (value === 0 || value === '0') {
+      removeItem(index);
+    } else {
       setIsCustomQuantity(false);
       setQuantity(value);
-      onQuantityChange(value,index,id); // Notify parent of the selected quantity
+      onQuantityChange(value, index, id);
     }
   };
 
   const handleCustomQuantityChange = (event) => {
     const value = event.target.value;
-
-    console.log(value)
-
     setQuantity(value);
-    // setIsCustomQuantity(false)
-    onQuantityChange(value,index,id); // Notify parent of the custom quantity
+    onQuantityChange(value, index, id);
   };
 
-  const getValue=()=>{
-    console.log("index is ", index)
+  const getValue = () => produceItems[index]?.Qty ?? '';
 
-    return produceItems[index].Qty
+  if (outStock === false) {
+    return (
+      <p className="text-amber-700 font-medium text-sm" role="status">
+        Out of stock
+      </p>
+    );
   }
 
-  // const updateQty=()=>{
-  //   toggleCustomQty()
-  // }
+  if (!isCustomQuantity) {
+    return (
+      <Select
+        value={quantity.length === 0 ? getValue() : quantity}
+        onChange={handleQuantityChange}
+        displayEmpty
+        inputProps={{
+          'aria-label': `Quantity for ${productName}`,
+        }}
+        sx={{
+          background: '#f3f4f6',
+          width: '100%',
+          minWidth: 88,
+          minHeight: 44,
+          lineHeight: 'normal',
+        }}
+        MenuProps={{
+          PaperProps: {
+            style: { maxHeight: '50%' },
+          },
+        }}
+      >
+        <MenuItem value={0} sx={{ minHeight: 44 }}>
+          Remove
+        </MenuItem>
+        {Array.from({ length: 9 }, (_, i) => i + 1).map((num) => (
+          <MenuItem key={num} value={num} sx={{ minHeight: 44 }}>
+            {num}
+          </MenuItem>
+        ))}
+        <MenuItem value="10+" sx={{ minHeight: 44 }}>
+          10+
+        </MenuItem>
+      </Select>
+    );
+  }
 
   return (
-    <div className='flex justify-center items-center'>
-
-      {console.log("quantity is ", quantity.length)}
-
-      {outStock===false ? <p className='text-orange-500 font-bold text-sm'>OUT OF STOCK</p> 
-        : 
-        !isCustomQuantity ? (
-        <Select
-          value={quantity.length===0 ? getValue() : quantity}
-          onChange={handleQuantityChange}
-          displayEmpty
-          sx={{background: '#E8E8E8',width: "100%", height: "45px", lineHeight: 'normal'}}
-          className="border border-gray-300 rounded"
-          MenuProps={{
-            PaperProps: {
-              style: {
-                maxHeight: '75%', // Set the desired max height
-                overflowY: 'auto',
-              },
-            },
-          }}
-        >
-          <MenuItem key={0} value={0}>0(DELETE)</MenuItem>
-          {/* {[...Array(10).keys()].map((num) => (
-            <MenuItem key={num} value={num}>{num}</MenuItem>
-          ))} */}
-          {Array.from({ length: 9}, (_, index)=>index+1).map((num)=>(
-            <MenuItem key={num} value={num}>{num}</MenuItem>
-          ))}
-          <MenuItem value="10+">10+</MenuItem>
-        </Select>
-      ) : (
-          <TextField
-            value={quantity}
-            onChange={handleCustomQuantityChange}
-            placeholder="Qty"
-            className="border border-gray-300 rounded"
-            sx={{
-              width:"80%",
-              fontSize: '1.20rem',
-            
-            }}
-        />
-      )}
-      {console.log("customQty is ", customQty)}
-      {/* <div className='ml-2'>
-        {customQty===true &&
-          <Button onClick={updateQty} className='text-black bg-yellow-500 rounded-xl text-sm/[14px] hover:bg-yellow-600'>UPDATE</Button>
-        }
-      </div> */}
-    </div>
+    <TextField
+      value={quantity}
+      onChange={handleCustomQuantityChange}
+      placeholder="Qty"
+      type="number"
+      inputProps={{
+        min: 1,
+        'aria-label': `Custom quantity for ${productName}`,
+      }}
+      sx={{
+        width: '100%',
+        minWidth: 88,
+        '& .MuiInputBase-root': { minHeight: 44 },
+      }}
+    />
   );
 };
 

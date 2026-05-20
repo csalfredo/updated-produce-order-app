@@ -2,28 +2,18 @@ import React, { useEffect, useState, useCallback } from "react";
 import { Drawer } from "@mui/material";
 import { produceAPI } from "../src/components/api";
 import { useProduce } from "../src/components/context/ProduceContext";
-import { useSwitch } from "@nextui-org/react";
 import {
-    Stack,
-    Autocomplete,
     TextField,
     Button,
     IconButton,
-    MenuItem,
-    Select,
-    accordionSummaryClasses,
     CircularProgress,
     Pagination,
     InputAdornment,
     Snackbar,
     Alert,
+    Box,
+    Typography,
 } from "@mui/material";
-import Snackbar1 from "@mui/material/Snackbar";
-import queryString from "query-string";
-import { Questrial } from "next/font/google";
-import QuantitySelector from "./QuantitySelector";
-import SendEmail from "./SendEmail";
-import axios from "axios";
 import Navbar from "../src/components/Navbar";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -33,6 +23,8 @@ import SaveIcon from "@mui/icons-material/Save";
 import InventoryCard from "./inventory_card";
 import useInventoryEditor from "./useInventoryEditor";
 import AddNewItem from "./add_new_item";
+import EditInventoryForm from "./EditInventoryForm";
+import InventoryDeleteDialog from "./InventoryDeleteDialog";
 /**
  * 
 
@@ -141,7 +133,11 @@ const inventory_list = (props) => {
         setOpen,
         editingItem,
         setEditingItem,
-        handleDeleteItem,
+        requestDeleteItem,
+        itemToDelete,
+        cancelDeleteItem,
+        confirmDeleteItem,
+        deleteLoading,
     } = useInventoryEditor({
         produceItems,
         setProduceItems,
@@ -154,6 +150,24 @@ const inventory_list = (props) => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const currentItems = filteredItems.slice(startIndex, endIndex);
+
+    useEffect(() => {
+        const onKeyDown = (e) => {
+            if (
+                e.key === "/" &&
+                e.target.tagName !== "INPUT" &&
+                e.target.tagName !== "TEXTAREA"
+            ) {
+                e.preventDefault();
+                document.getElementById("inventory-search-input")?.focus();
+            }
+            if (e.key === "Escape") {
+                setSearchTerm("");
+            }
+        };
+        window.addEventListener("keydown", onKeyDown);
+        return () => window.removeEventListener("keydown", onKeyDown);
+    }, []);
 
     const inventoryTableColDesc =
         "flex justify-start items-center border-r border-gray-400 p-2 flex-[2] min-w-0 basis-0";
@@ -212,11 +226,11 @@ const inventory_list = (props) => {
     // };
 
     return (
-        <div>
+        <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-50">
             <div className="hidden md:block">
                 {/* TODO: DISPLAYING THE NAVBAR*/}
                 <div className="mb-10">
-                    <Navbar title="Inventory List" />
+                    <Navbar title="Inventory" />
                 </div>
                 <div className="flex justify-center items-center">
                     {/* TODO: DISPLAYING THE TITLE*/}
@@ -229,11 +243,13 @@ const inventory_list = (props) => {
                 <div className="flex justify-center items-center">
                     <div className="w-1/2 p-4 flex justify-between items-center gap-2">
                         <TextField
+                            id="inventory-search-input"
                             placeholder="Search items..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             size="small"
                             sx={{ width: "300px" }}
+                            inputProps={{ "aria-describedby": "inventory-search-hint" }}
                             InputProps={{
                                 startAdornment: (
                                     <InputAdornment position="start">
@@ -254,12 +270,15 @@ const inventory_list = (props) => {
                                 color: "white",
                             }}
                         >
-                            Add Inventory
+                            Add item
                         </Button>
                     </div>
                 </div>
-                <div className="flex justify-center mb-4 px-4">
-                    <div className="w-full max-w-5xl overflow-x-auto border border-black rounded-lg">
+                <Typography id="inventory-search-hint" variant="caption" color="text.secondary" sx={{ textAlign: "center", display: "block", mb: 2 }}>
+                    Press / to focus search · Esc to clear
+                </Typography>
+                <div className="flex justify-center mb-4 px-4 max-w-6xl mx-auto">
+                    <div className="w-full overflow-x-auto border border-gray-300 rounded-lg bg-white shadow-sm">
                         <div className="min-w-[36rem]">
                             <div className="flex flex-row border-b border-black bg-gray-50">
                                 <div className={inventoryTableColDesc}>
@@ -294,8 +313,17 @@ const inventory_list = (props) => {
                                     </p>
                                 </div>
                             </div>
-                        {loading && <CircularProgress />}
-                        {error && <div>Error: {error}</div>}
+                        {loading && (
+                            <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+                                <CircularProgress color="primary" />
+                            </Box>
+                        )}
+                        {error && <Alert severity="error" sx={{ m: 2 }}>{error}</Alert>}
+                        {!loading && !error && currentItems.length === 0 && (
+                            <Typography sx={{ p: 4, textAlign: "center", color: "text.secondary" }}>
+                                {searchTerm ? "No items match your search." : "No inventory items yet."}
+                            </Typography>
+                        )}
                         <div>
                             {currentItems.map((item) => (
                                 <div
@@ -411,20 +439,14 @@ const inventory_list = (props) => {
                                                 >
                                                     <EditIcon fontSize="small" />
                                                 </Button>
-                                                <Button
-                                                    variant="contained"
+                                                <IconButton
                                                     color="error"
-                                                    sx={{
-                                                        minWidth: "24px",
-                                                        height: "24px",
-                                                        padding: "2px",
-                                                    }}
-                                                    onClick={() =>
-                                                        handleDeleteItem(item)
-                                                    }
+                                                    size="small"
+                                                    aria-label={`Delete ${item.name}`}
+                                                    onClick={() => requestDeleteItem(item)}
                                                 >
                                                     <DeleteIcon fontSize="small" />
-                                                </Button>
+                                                </IconButton>
                                             </>
                                         )}
                                     </div>
@@ -461,12 +483,12 @@ const inventory_list = (props) => {
                 </div>
             </div>
             </div>
-            <div className="block md:hidden space-y-4 bg-gray-100">
+            <div className="block md:hidden space-y-4 pb-8">
                 <div className="mb-10">
-                    <Navbar title="Inventory List" />
+                    <Navbar title="Inventory" />
                 </div>
                 <div className="flex justify-center items-center">
-                    <h1 className="text-2xl font-bold">Inventory List</h1>
+                    <h1 className="text-2xl font-bold text-emerald-900">Inventory</h1>
                 </div>
                 <div className="flex justify-center items-center">
                     <TextField
@@ -484,27 +506,46 @@ const inventory_list = (props) => {
                         }}
                     />
                 </div>
-                <div className="flex justify-center items-center w-[275px] mx-auto">
+                <div className="px-4 max-w-6xl mx-auto w-full">
                     <Button
                         variant="contained"
                         color="primary"
+                        fullWidth
                         onClick={() => setAddNewItem(true)}
-                        sx={{
-                            width: "100%",
-                            height: "40px",
-                            borderRadius: "10px",
-                            backgroundColor: "primary.main",
-                            color: "white",
-                        }}
+                        sx={{ mb: 3, py: 1.25, maxWidth: 480, mx: "auto", display: "flex" }}
                     >
-                        Add Inventory
+                        Add item
                     </Button>
-                </div>
-                <div className="flex justify-center items-center w-full">
                     <InventoryCard
-                        inventoryList={filteredItems}
-                        setInventory_Updated={setInventory_Updated}
+                        inventoryList={currentItems}
+                        requestDeleteItem={requestDeleteItem}
+                        onEditItem={handleEdit}
                     />
+                    <Drawer
+                        anchor="bottom"
+                        open={open}
+                        onClose={() => setOpen(false)}
+                        BackdropProps={{ sx: { backgroundColor: "rgba(0, 0, 0, 0.55)" } }}
+                        PaperProps={{ sx: { backgroundColor: "transparent", boxShadow: "none" } }}
+                    >
+                        <EditInventoryForm
+                            item={editingItem}
+                            handleClose={() => setOpen(false)}
+                            setInventory_Updated={setInventory_Updated}
+                            setNotification={(msg) => showInventoryNotification(msg, 'success')}
+                        />
+                    </Drawer>
+                    {totalPages > 1 && (
+                        <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
+                            <Pagination
+                                count={totalPages}
+                                page={currentPage}
+                                onChange={(event, page) => setCurrentPage(page)}
+                                color="primary"
+                                size="small"
+                            />
+                        </Box>
+                    )}
                 </div>
             </div>
 
@@ -528,6 +569,13 @@ const inventory_list = (props) => {
                     showInventoryNotification={showInventoryNotification}
                 />
             </Drawer>
+            <InventoryDeleteDialog
+                open={Boolean(itemToDelete)}
+                itemName={itemToDelete?.name}
+                onCancel={cancelDeleteItem}
+                onConfirm={confirmDeleteItem}
+                loading={deleteLoading}
+            />
             <Snackbar
                 open={inventoryNotification.open}
                 autoHideDuration={3000}

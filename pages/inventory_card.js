@@ -1,140 +1,76 @@
 'use client';
-import React, { useState } from 'react';
-import { IconButton, Drawer, Snackbar, Alert } from '@mui/material';
+import React from 'react';
+import { IconButton } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import EditInventoryForm from './EditInventoryForm';
-import useInventoryEditor from './useInventoryEditor';
-import { useProduce } from '../src/components/context/ProduceContext';
 
-
-const inventory_card = ({inventoryList, setInventory_Updated}) => {
-//   const [open, setOpen] = useState(false);
-  const handleOpen = () => setOpen(true);
-  const handleClose = () => setOpen(false);
-//   const [editingItem, setEditingItem] = useState(null);
-  const [produceItems, setProduceItems] = useState([]);
-  const { setInventoryUpdated } = useProduce();
-  const [notification, setNotification] = useState({
-    open: false,
-    message: '',
-    severity: 'success',
-});
-
-const {
-    editingId,
-    editCaseCost,
-    setEditCaseCost,
-    editPromoPrice,
-    setEditPromoPrice,
-    editQuantity,
-    setEditQuantity,
-    handleEdit,
-    handleCancelEdit,
-    handleSaveItem,
-    open,
-    setOpen,
-    editingItem,
-    setEditingItem,
-  } = useInventoryEditor({
-    produceItems,
-    setProduceItems,
-    setInventoryUpdated,
-  });
-
-const handleCloseNotification = () => {
-    setNotification((prev) => ({
-        ...prev,
-        open: false,
-    }));
-};
-
-//   const handleEdit = (item) => {
-//     setOpen(true);
-//     setEditingItem(item);
-//   };
-
+const inventory_card = ({
+  inventoryList,
+  requestDeleteItem,
+  onEditItem,
+}) => {
+  if (!inventoryList?.length) {
+    return (
+      <p className="text-center text-gray-500 py-8 w-full">
+        No items to display.
+      </p>
+    );
+  }
 
   return (
-    <div className="w-full px-4 py-4 flex justify-center items-center">
-        <div className="flex flex-col items-center justify-center gap-4 w-full">
+    <div className="w-full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
         {inventoryList.map((item) => (
-                <div key={item.id} className="bg-white border border-gray-300 flex flex-col rounded-lg w-[275px] px-3 py-4 shadow-sm">
-                    <div className="w-full flex flex-row items-start gap-2">
-                        <div className="flex justify-start items-start flex-1 min-w-0">
-                          <p className="text-base font-semibold leading-snug break-words line-clamp-2">{item.name}</p>
-                        </div>
-                        <div className="flex justify-end items-center shrink-0 gap-1">
-                            <IconButton
-                                 variant="contained" 
-                                 color="primary"
-                                 size="small"
-                                 onClick={() => handleEdit(item)}
-                                 >
-                                    <EditIcon fontSize="small" />
-                            </IconButton>
-                            <IconButton
-                                 variant="contained" 
-                                 color="error"
-                                 size="small"
-                                 >
-                                    <DeleteIcon fontSize="small" />
-                            </IconButton>
-                        </div>
-                    </div>
-                    <div className="w-full mt-4 flex flex-col gap-1 text-sm">
-                        <div className="flex justify-between items-center gap-2">
-                            <p className="font-medium text-gray-700">Case Qty:</p>
-                            <span className="text-gray-700">{item.quantity}</span>
-                        </div>
-                        <div className="flex justify-between items-center gap-2">
-                            <p className="font-medium text-gray-700">Price:</p>
-                            <span className="text-gray-700">${item.case_cost}</span>
-                        </div>
-                        <div className="flex justify-between items-center gap-2">
-                            <p className="font-medium text-gray-700">Promo Price:</p>
-                            <span className="font-semibold text-green-600">${item.promo_price}</span>
-                        </div>
-                    </div>
-
-                </div>
-            ))}
-        </div>
-            <Drawer
-                anchor="bottom"
-                open={open}
-                onClose={handleClose}
-                BackdropProps={{
-                    sx: { backgroundColor: 'rgba(0, 0, 0, 0.55)' },
-                }}
-                PaperProps={{
-                    sx: {
-                        backgroundColor: 'transparent',
-                        boxShadow: 'none',
-                    },
-                }}
-            >
-                <EditInventoryForm 
-                    item={editingItem}
-                    handleClose={handleClose}
-                    setInventory_Updated={setInventory_Updated}
-                    setNotification={setNotification}
-                />
-            </Drawer>
-            <Snackbar
-                open={notification.open}
-                autoHideDuration={3000}
-                onClose={handleCloseNotification}
-                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-            >
-                <Alert
-                    onClose={handleCloseNotification}
-                    severity={notification.severity}
-                    sx={{ width: '100%' }}
+          <article
+            key={item.id}
+            className="bg-white border border-gray-200 flex flex-col rounded-lg w-full px-4 py-4 shadow-sm hover:shadow-md transition-shadow"
+          >
+            <div className="w-full flex flex-row items-start gap-2">
+              <div className="flex-1 min-w-0">
+                <h2 className="text-base font-semibold leading-snug break-words line-clamp-2 capitalize">
+                  {item.name}
+                </h2>
+              </div>
+              <div className="flex shrink-0 gap-0.5">
+                <IconButton
+                  color="primary"
+                  size="medium"
+                  aria-label={`Edit ${item.name}`}
+                  onClick={() => onEditItem?.(item)}
+                  sx={{ minWidth: 44, minHeight: 44 }}
                 >
-                    {notification.message}
-                </Alert>
-            </Snackbar>
+                  <EditIcon fontSize="small" />
+                </IconButton>
+                <IconButton
+                  color="error"
+                  size="medium"
+                  aria-label={`Delete ${item.name}`}
+                  onClick={() => requestDeleteItem?.(item)}
+                  sx={{ minWidth: 44, minHeight: 44 }}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </div>
+            </div>
+            <dl className="w-full mt-3 flex flex-col gap-2 text-sm">
+              <div className="flex justify-between gap-2">
+                <dt className="text-gray-500">Quantity</dt>
+                <dd className="font-medium text-gray-900 tabular-nums">{item.quantity}</dd>
+              </div>
+              <div className="flex justify-between gap-2">
+                <dt className="text-gray-500">Price</dt>
+                <dd className="font-medium text-gray-900 tabular-nums">${item.case_cost}</dd>
+              </div>
+              <div className="flex justify-between gap-2">
+                <dt className="text-gray-500">Promo</dt>
+                <dd className="font-semibold text-green-700 tabular-nums">
+                  ${item.promo_price}
+                </dd>
+              </div>
+            </dl>
+          </article>
+        ))}
+      </div>
     </div>
   );
 };
