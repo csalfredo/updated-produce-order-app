@@ -19,6 +19,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
+
+    Route::middleware('admin')->group(function () {
+        Route::post('/admin/users', [AuthController::class, 'registerCustomerByAdmin']);
+        Route::post('/admin/admins', [AuthController::class, 'registerAdmin']);
+    });
     Route::post('/orders', [OrderController::class, 'store']);
     Route::get('/orders', [OrderController::class, 'index']);
 

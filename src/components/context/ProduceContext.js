@@ -87,8 +87,7 @@ export const ProduceProvider = ({ children }) => {
         try {
             const result = await authService.checkAuth();
             console.log("Authentication check result:", result);
-            // setIsAdmin(result.is_admin);
-            setIsAdmin(true);
+            setIsAdmin(!!result?.is_admin);
             setIsLoggedIn(!!result);
         } catch (error) {
             console.error("Auth check failed:", error);

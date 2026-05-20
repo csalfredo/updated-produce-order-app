@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { TextField, Button, Box, Container, Typography, Alert } from '@mui/material';
 import { authService } from '../src/components/auth';
@@ -184,7 +185,10 @@ export default function Login() {
           </Box>
 
           <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 1 }}>
-            Need an account? Contact your administrator.
+            New user?{' '}
+            <Link href="/register" style={{ color: '#166534', fontWeight: 600 }}>
+              Register here
+            </Link>
           </Typography>
         </Box>
       </Box>

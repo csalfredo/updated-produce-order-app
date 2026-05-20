@@ -59,19 +59,65 @@ export const authService = {
   register: async (userData) => {
     try {
       await authService.getCsrfCookie();
-      
+
       const response = await axiosInstance.post('/register', {
-        name: userData.email.split('@')[0],
+        name: userData.name,
         email: userData.email,
         password: userData.password,
-        password_confirmation: userData.password_confirmation
+        password_confirmation: userData.password_confirmation,
+      });
+
+      if (response.status === 204 || response.status === 201) {
+        return true;
+      }
+
+      return response.data;
+    } catch (error) {
+      throw authService.formatAuthError(error, 'Registration failed');
+    }
+  },
+
+  registerUserByAdmin: async (userData) => {
+    try {
+      await authService.getCsrfCookie();
+
+      const response = await axiosInstance.post('/api/admin/users', {
+        name: userData.name,
+        email: userData.email,
+        password: userData.password,
+        password_confirmation: userData.password_confirmation,
       });
 
       return response.data;
     } catch (error) {
-      console.error('Registration error:', error.response?.data || error);
-      throw new Error(error.response?.data?.message || 'Registration failed');
+      throw authService.formatAuthError(error, 'Could not create user account');
     }
+  },
+
+  registerAdmin: async (userData) => {
+    try {
+      await authService.getCsrfCookie();
+
+      const response = await axiosInstance.post('/api/admin/admins', {
+        name: userData.name,
+        email: userData.email,
+        password: userData.password,
+        password_confirmation: userData.password_confirmation,
+      });
+
+      return response.data;
+    } catch (error) {
+      throw authService.formatAuthError(error, 'Could not create admin user');
+    }
+  },
+
+  formatAuthError: (error, fallback) => {
+    const data = error.response?.data;
+    if (data?.errors) {
+      const first = Object.values(data.errors).flat()[0];
+      return new Error(first || fallback);
+    }
+    return new Error(data?.message || fallback);
   },
 
   login: async (credentials) => {

@@ -21,6 +21,8 @@ import {
   Inventory as InventoryIcon,
   History as HistoryIcon,
   ShoppingCart as ShoppingCartIcon,
+  PersonAdd as PersonAddIcon,
+  AdminPanelSettings as AdminPanelSettingsIcon,
 } from '@mui/icons-material';
 
 const APP_BAR_FONT =
@@ -127,6 +129,24 @@ const Navbar = ({ title }) => {
                 >
                   Order history
                 </Button>
+                <Button
+                  color="inherit"
+                  component={Link}
+                  href="/register-user"
+                  sx={navButtonSx}
+                  startIcon={<PersonAddIcon sx={{ fontSize: 18 }} />}
+                >
+                  Add user
+                </Button>
+                <Button
+                  color="inherit"
+                  component={Link}
+                  href="/register-admin"
+                  sx={navButtonSx}
+                  startIcon={<AdminPanelSettingsIcon sx={{ fontSize: 18 }} />}
+                >
+                  Add admin
+                </Button>
               </>
             )}
             <Button color="inherit" onClick={handleLogout} sx={navButtonSx} startIcon={<LogoutIcon sx={{ fontSize: 18 }} />}>
@@ -189,15 +209,32 @@ const Navbar = ({ title }) => {
                   Order history
                 </MenuItem>
               ),
+              isAdmin && (
+                <MenuItem key="register-user" onClick={() => goTo('/register-user')}>
+                  <PersonAddIcon sx={{ mr: 2, fontSize: 20 }} />
+                  Add user
+                </MenuItem>
+              ),
+              isAdmin && (
+                <MenuItem key="register-admin" onClick={() => goTo('/register-admin')}>
+                  <AdminPanelSettingsIcon sx={{ mr: 2, fontSize: 20 }} />
+                  Add admin
+                </MenuItem>
+              ),
               <MenuItem key="logout" onClick={handleLogout}>
                 <LogoutIcon sx={{ mr: 2, fontSize: 20 }} />
                 Logout
               </MenuItem>,
             ]
           ) : (
-            <MenuItem onClick={handleClose} component={Link} href="/login">
-              Sign in
-            </MenuItem>
+            [
+              <MenuItem key="login" onClick={() => goTo('/login')}>
+                Sign in
+              </MenuItem>,
+              <MenuItem key="register" onClick={() => goTo('/register')}>
+                Register
+              </MenuItem>,
+            ]
           )}
         </Menu>
       </Toolbar>
