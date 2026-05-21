@@ -115,9 +115,13 @@ export const authService = {
     const data = error.response?.data;
     if (data?.errors) {
       const first = Object.values(data.errors).flat()[0];
-      return new Error(first || fallback);
+      if (first) return new Error(first);
     }
-    return new Error(data?.message || fallback);
+    const message = data?.message;
+    if (message && message !== 'The given data was invalid.') {
+      return new Error(message);
+    }
+    return new Error(fallback);
   },
 
   login: async (credentials) => {
@@ -175,19 +179,10 @@ export const authService = {
       
       return true;
     } catch (error) {
-      console.error('Login error:', error.response?.data || error);
-      console.error('Error details:', {
-        status: error.response?.status,
-        headers: error.response?.headers,
-        data: error.response?.data
-      });
-      
-      // Provide a more helpful error message
-      if (error.response?.status === 422) {
-        throw new Error('Login failed: ' + (error.response?.data?.message || 'Invalid email or password format'));
-      }
-      
-      throw new Error('Login failed');
+      throw authService.formatAuthError(
+        error,
+        'Invalid email or password. Please try again.',
+      );
     }
   },
 

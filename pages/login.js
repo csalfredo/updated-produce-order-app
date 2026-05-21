@@ -94,8 +94,7 @@ export default function Login() {
       await authService.login(formData);
       router.push('/produceorder');
     } catch (err) {
-      console.error('Login error:', err);
-      setError(err.message || 'Login failed. Please try again.');
+      setError(err.message || 'Invalid email or password. Please try again.');
     } finally {
       setLoading(false);
     }
