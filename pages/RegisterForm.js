@@ -10,6 +10,7 @@ import {
   Alert,
 } from '@mui/material';
 import { authService } from '../src/components/auth';
+import { useProduce } from '../src/components/context/ProduceContext';
 
 const initialForm = {
   name: '',
@@ -20,8 +21,9 @@ const initialForm = {
 
 /**
  * Shared registration UI.
- * @param {'public'|'admin-user'|'admin-admin'} mode
+ * @param {'public'|'public-admin'|'admin-user'|'admin-admin'} mode
  *   - public: customer self-registration
+ *   - public-admin: guest self-registration as admin
  *   - admin-user: admin creates a customer account
  *   - admin-admin: admin creates another admin account
  */
@@ -32,6 +34,8 @@ export default function RegisterForm({
   successRedirect = '/produceorder',
 }) {
   const router = useRouter();
+  const { refreshAuth } = useProduce();
+  const isPublicAdmin = mode === 'public-admin';
   const isAdminCreateUser = mode === 'admin-user';
   const isAdminCreateAdmin = mode === 'admin-admin';
 
@@ -45,16 +49,20 @@ export default function RegisterForm({
     title ||
     (isAdminCreateAdmin
       ? 'Add admin user'
-      : isAdminCreateUser
-        ? 'Add user'
-        : 'Create your account');
+      : isPublicAdmin
+        ? 'Register as admin'
+        : isAdminCreateUser
+          ? 'Add user'
+          : 'Create your account');
   const subheading =
     subtitle ||
     (isAdminCreateAdmin
       ? 'New admins can manage inventory and view all orders.'
-      : isAdminCreateUser
-        ? 'Create a customer account so they can sign in and place orders.'
-        : 'Register to place produce orders.');
+      : isPublicAdmin
+        ? 'Create an admin account to manage inventory and orders.'
+        : isAdminCreateUser
+          ? 'Create a customer account so they can sign in and place orders.'
+          : 'Register to place produce orders.');
 
   const validateForm = () => {
     const nextErrors = {};
@@ -110,7 +118,11 @@ export default function RegisterForm({
 
     setLoading(true);
     try {
-      if (isAdminCreateAdmin) {
+      if (isPublicAdmin) {
+        await authService.registerAdminPublic(formData);
+        await refreshAuth();
+        router.push(successRedirect);
+      } else if (isAdminCreateAdmin) {
         await authService.registerAdmin(formData);
         setSuccess('Admin account created successfully.');
         setFormData(initialForm);
@@ -120,6 +132,7 @@ export default function RegisterForm({
         setFormData(initialForm);
       } else {
         await authService.register(formData);
+        await refreshAuth();
         router.push(successRedirect);
       }
     } catch (err) {
@@ -240,7 +253,7 @@ export default function RegisterForm({
             >
               {loading
                 ? 'Creating account…'
-                : isAdminCreateAdmin
+                : isAdminCreateAdmin || isPublicAdmin
                   ? 'Create admin'
                   : isAdminCreateUser
                     ? 'Create user'

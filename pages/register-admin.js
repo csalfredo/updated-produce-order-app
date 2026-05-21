@@ -8,27 +8,28 @@ import { authService } from '../src/components/auth';
 export default function RegisterAdmin() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
-  const [allowed, setAllowed] = useState(false);
+  const [mode, setMode] = useState(null);
 
   useEffect(() => {
-    const verifyAdmin = async () => {
+    const verifyAccess = async () => {
       try {
         const user = await authService.checkAuth();
         if (user?.is_admin) {
-          setAllowed(true);
+          setMode('admin-admin');
         } else if (user) {
           router.replace('/produceorder');
+          return;
         } else {
-          router.replace('/login');
+          setMode('public-admin');
         }
       } catch {
-        router.replace('/login');
+        setMode('public-admin');
       } finally {
         setChecking(false);
       }
     };
 
-    verifyAdmin();
+    verifyAccess();
   }, [router]);
 
   if (checking) {
@@ -39,7 +40,7 @@ export default function RegisterAdmin() {
     );
   }
 
-  if (!allowed) {
+  if (!mode) {
     return (
       <Container sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Typography color="text.secondary">Redirecting…</Typography>
@@ -50,7 +51,10 @@ export default function RegisterAdmin() {
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#f0fdf4' }}>
       <Navbar title="Produce Order" />
-      <RegisterForm mode="admin-admin" />
+      <RegisterForm
+        mode={mode}
+        successRedirect={mode === 'public-admin' ? '/inventory_list' : '/produceorder'}
+      />
     </Box>
   );
 }

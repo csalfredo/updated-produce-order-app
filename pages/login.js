@@ -4,10 +4,11 @@ import { useRouter } from 'next/router';
 import { TextField, Button, Box, Container, Typography, Alert } from '@mui/material';
 import { authService } from '../src/components/auth';
 import { useProduce } from '../src/components/context/ProduceContext';
+import Navbar from '../src/components/Navbar';
 
 export default function Login() {
   const router = useRouter();
-  const { authMessage, setAuthMessage } = useProduce();
+  const { authMessage, setAuthMessage, refreshAuth } = useProduce();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -92,6 +93,7 @@ export default function Login() {
 
     try {
       await authService.login(formData);
+      await refreshAuth();
       router.push('/produceorder');
     } catch (err) {
       setError(err.message || 'Invalid email or password. Please try again.');
@@ -101,6 +103,11 @@ export default function Login() {
   };
 
   return (
+    <div>
+      <Navbar 
+      title="Produce Order" 
+      login={true}
+       />
     <Container
       component="main"
       maxWidth="xs"
@@ -111,6 +118,7 @@ export default function Login() {
         bgcolor: '#f0fdf4',
       }}
     >
+
       <Box
         sx={{
           flex: 1,
@@ -192,5 +200,6 @@ export default function Login() {
         </Box>
       </Box>
     </Container>
+    </div>
   );
 }

@@ -94,6 +94,27 @@ export const authService = {
     }
   },
 
+  registerAdminPublic: async (userData) => {
+    try {
+      await authService.getCsrfCookie();
+
+      const response = await axiosInstance.post('/register-admin', {
+        name: userData.name,
+        email: userData.email,
+        password: userData.password,
+        password_confirmation: userData.password_confirmation,
+      });
+
+      if (response.status === 204 || response.status === 201) {
+        return true;
+      }
+
+      return response.data;
+    } catch (error) {
+      throw authService.formatAuthError(error, 'Admin registration failed');
+    }
+  },
+
   registerAdmin: async (userData) => {
     try {
       await authService.getCsrfCookie();

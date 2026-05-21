@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 import {
   Menu as MenuIcon,
+  Person as UserIcon,
   Logout as LogoutIcon,
   Inventory as InventoryIcon,
   History as HistoryIcon,
@@ -35,15 +36,16 @@ const navButtonSx = {
   fontFamily: APP_BAR_FONT,
 };
 
-const Navbar = ({ title }) => {
+const Navbar = ({ title, login }) => {
   const router = useRouter();
-  const { inventoryUpdated, isLoggedIn, isAdmin } = useProduce();
+  const { inventoryUpdated, isLoggedIn, isAdmin, user, refreshAuth } = useProduce();
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
 
   const handleLogout = async () => {
     try {
       await authService.logout();
+      await refreshAuth();
       handleClose();
       router.push('/login');
     } catch (error) {
@@ -89,6 +91,15 @@ const Navbar = ({ title }) => {
           <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 0.5 }}>
             <Button
               color="inherit"
+              disabled
+              sx={{ ...navButtonSx, display: { xs: 'none', md: 'inline-flex' } }}
+              style={{color: 'inherit'}}
+              startIcon={<UserIcon sx={{ fontSize: 18 }} />}
+            >
+              {user?.name}
+            </Button>
+            <Button
+              color="inherit"
               component={Link}
               href="/produceorder"
               sx={navButtonSx}
@@ -96,6 +107,7 @@ const Navbar = ({ title }) => {
             >
               Place order
             </Button>
+
             {isAdmin && (
               <>
                 <Button
@@ -190,10 +202,17 @@ const Navbar = ({ title }) => {
         >
           {isLoggedIn ? (
             [
+              user && (
+                <MenuItem key="user-info" style={{color: 'inherit'}}>
+                  <UserIcon sx={{ mr: 2, fontSize: 20 }} />
+                  {user.name}
+                </MenuItem>
+              ),
               <MenuItem key="place-order" onClick={() => goTo('/produceorder')}>
                 <ShoppingCartIcon sx={{ mr: 2, fontSize: 20 }} />
                 Place order
               </MenuItem>,
+
               isAdmin && (
                 <MenuItem key="inventory-list" onClick={() => goTo('/inventory_list')}>
                   <InventoryIcon sx={{ mr: 2, fontSize: 20 }} />
@@ -233,6 +252,9 @@ const Navbar = ({ title }) => {
               </MenuItem>,
               <MenuItem key="register" onClick={() => goTo('/register')}>
                 Register
+              </MenuItem>,
+              <MenuItem key="register-admin" onClick={() => goTo('/register-admin')}>
+                Admin Register
               </MenuItem>,
             ]
           )}

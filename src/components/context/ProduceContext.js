@@ -6,6 +6,7 @@ import React, {
     useEffect,
     useCallback,
 } from "react";
+import { useRouter } from "next/router";
 import axios from "axios";
 import { authService } from "../auth";
 import gala_apple from "../images/gala_apple.png";
@@ -65,6 +66,7 @@ const imageMapping = {
 export const useProduce = () => useContext(ProduceContext);
 
 export const ProduceProvider = ({ children }) => {
+    const router = useRouter();
     const [produceListItems, setProduceListItems] = useState([]);
     const [userCurrentOrder, setUserCurrentOrder] = useState([]);
     const [totalBalance, setTotalBalance] = useState(0.0);
@@ -74,26 +76,41 @@ export const ProduceProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [isAdmin, setIsAdmin] = useState(false);
+    const [user, setUser] = useState(null);
     /** Shared across Navbar + inventory page; URL cannot pass setters. */
     const [inventoryUpdated, setInventoryUpdated] = useState(false);
     /** Shown on login after session expiry or auth redirect. */
     const [authMessage, setAuthMessage] = useState("");
 
-    useEffect(() => {
-        checkAuthStatus();
-    }, []);
-
-    const checkAuthStatus = async () => {
+    const refreshAuth = useCallback(async () => {
         try {
             const result = await authService.checkAuth();
-            console.log("Authentication check result:", result);
+            setUser(result || null);
             setIsAdmin(!!result?.is_admin);
             setIsLoggedIn(!!result);
+            return result;
         } catch (error) {
             console.error("Auth check failed:", error);
+            setUser(null);
+            setIsAdmin(false);
             setIsLoggedIn(false);
+            return false;
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        refreshAuth();
+    }, [refreshAuth]);
+
+    useEffect(() => {
+        const onRouteChange = () => {
+            refreshAuth();
+        };
+        router.events.on("routeChangeComplete", onRouteChange);
+        return () => {
+            router.events.off("routeChangeComplete", onRouteChange);
+        };
+    }, [router.events, refreshAuth]);
 
     const fetchProduceItems = useCallback(async () => {
         try {
@@ -216,6 +233,8 @@ export const ProduceProvider = ({ children }) => {
                 refreshProduceCatalog: fetchProduceItems,
                 isLoggedIn,
                 isAdmin,
+                user,
+                refreshAuth,
                 authMessage,
                 setAuthMessage,
             }}

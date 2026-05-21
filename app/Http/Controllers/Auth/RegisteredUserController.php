@@ -39,4 +39,29 @@ class RegisteredUserController extends Controller
 
         return response()->noContent();
     }
+
+    /**
+     * Public admin self-registration (guest users from the login flow).
+     */
+    public function storeAdmin(Request $request): Response
+    {
+        $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        ]);
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->string('password')),
+            'is_admin' => true,
+        ]);
+
+        event(new Registered($user));
+
+        Auth::login($user);
+
+        return response()->noContent();
+    }
 }
